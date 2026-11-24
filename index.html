@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grading a Solar Wafer</title>
+<meta name="description" content="PHYS 336 course project (Idea 4): how photoconductance and photoluminescence grade a silicon solar wafer by its carrier lifetime and implied open-circuit voltage.">
+<style>
+:root{
+  --bg:#f6f7fb; --panel:#ffffff; --ink:#1b2333; --muted:#5b6578; --line:#dfe3ec;
+  --accent:#1f5fbf; --accent-soft:#e7effb; --ok:#1e7a4c; --ok-soft:#e5f4ec; --warn:#a15c00; --warn-soft:#fdf2e1;
+  --bad:#b3261e; --bad-soft:#fbe9e7; --code:#f1f3f8;
+  --c1:#1f5fbf; --c2:#e07a1f; --c3:#2e9e6b; --c4:#c2372f; --c5:#7c4dcc; --c6:#6b7280;
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10141c; --panel:#171d28; --ink:#e7ebf3; --muted:#9aa5b8; --line:#2a3344;
+    --accent:#6aa3ff; --accent-soft:#1c2a44; --ok:#5fd39a; --ok-soft:#163327; --warn:#f0b35b; --warn-soft:#3a2c14;
+    --bad:#ff8a80; --bad-soft:#3a1d1b; --code:#1e2533;
+    --c1:#6aa3ff; --c2:#ffa04d; --c3:#4fd09a; --c4:#ff7a70; --c5:#b394ff; --c6:#9aa5b8;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10141c; --panel:#171d28; --ink:#e7ebf3; --muted:#9aa5b8; --line:#2a3344;
+  --accent:#6aa3ff; --accent-soft:#1c2a44; --ok:#5fd39a; --ok-soft:#163327; --warn:#f0b35b; --warn-soft:#3a2c14;
+  --bad:#ff8a80; --bad-soft:#3a1d1b; --code:#1e2533;
+  --c1:#6aa3ff; --c2:#ffa04d; --c3:#4fd09a; --c4:#ff7a70; --c5:#b394ff; --c6:#9aa5b8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent)}
+header{padding:22px 24px 10px;max-width:1360px;margin:0 auto}
+header h1{margin:0;font-size:24px;letter-spacing:-.01em}
+header .sub{color:var(--muted);font-size:13.5px;margin-top:4px}
+.qbox{margin-top:12px;background:var(--accent-soft);border-left:4px solid var(--accent);padding:10px 14px;border-radius:8px;font-size:14.5px}
+nav.tabs{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+nav.tabs .inner{max-width:1360px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:8px 16px;scrollbar-width:thin}
+nav.tabs button{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 13px;border-radius:999px;cursor:pointer;font:inherit;font-size:13.5px;white-space:nowrap}
+nav.tabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.layout{max-width:1360px;margin:0 auto;padding:16px;display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+aside.controls{position:sticky;top:58px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;max-height:calc(100vh - 74px);overflow:auto}
+aside h2{font-size:14px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ctl{margin:10px 0 12px}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px}
+.ctl label b{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600}
+.ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.ctl .hint{font-size:11.5px;color:var(--muted)}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.presets button,.btn{border:1px solid var(--line);background:var(--code);color:var(--ink);padding:5px 9px;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px}
+.presets button:hover,.btn:hover{border-color:var(--accent)}
+select{font:inherit;font-size:13px;padding:4px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);width:100%}
+.out{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.out div{display:flex;justify-content:space-between;font-size:13px;padding:2px 0}
+.out div span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+main{min-width:0}
+section.tab{display:none}
+section.tab.active{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
+.card h2{margin:0 0 6px;font-size:19px}
+.card h3{margin:14px 0 6px;font-size:15.5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat{background:var(--code);border-radius:10px;padding:12px}
+.stat .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12.5px;color:var(--muted)}
+.eq{background:var(--code);border-radius:8px;padding:10px 12px;margin:8px 0;font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;font-size:17px;overflow-x:auto;white-space:nowrap}
+.eq .n{float:right;color:var(--muted);font-family:inherit;font-size:13px}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:5px;margin-right:4px;vertical-align:1px}
+.tag.in{background:var(--accent-soft);color:var(--accent)}
+.tag.as{background:var(--warn-soft);color:var(--warn)}
+.tag.calc{background:var(--ok-soft);color:var(--ok)}
+.tag.lim{background:var(--bad-soft);color:var(--bad)}
+.note{font-size:13px;color:var(--muted)}
+.callout{border-radius:8px;padding:10px 12px;margin:10px 0;font-size:14px}
+.callout.ok{background:var(--ok-soft)} .callout.warn{background:var(--warn-soft)} .callout.bad{background:var(--bad-soft)} .callout.info{background:var(--accent-soft)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.pass{color:var(--ok);font-weight:700} .warnc{color:var(--warn);font-weight:700} .fail{color:var(--bad);font-weight:700}
+.plot{width:100%;height:auto;display:block;max-width:660px;margin:0 auto}
+.plotwrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px}
+.plotwrap .cap{font-size:12.5px;color:var(--muted);padding:2px 6px 4px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;padding:2px 6px}
+.legend span i{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}
+canvas{max-width:100%;image-rendering:pixelated;border-radius:8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.inline-ctl{display:flex;gap:8px;align-items:center;font-size:13px}
+.inline-ctl input[type=range]{width:160px}
+.inline-ctl input[type=number]{width:110px;font:inherit;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+ol.refs li{margin-bottom:6px;font-size:13.5px}
+.small{font-size:12.5px}
+.theme-toggle{float:right;margin-top:-30px}
+footer{max-width:1360px;margin:0 auto;padding:10px 24px 30px;color:var(--muted);font-size:12.5px}
+@media (max-width:980px){
+  .layout{grid-template-columns:1fr}
+  aside.controls{position:static;max-height:none}
+  .grid2,.grid3{grid-template-columns:1fr}
+}
+@media (max-width:520px){
+  header{padding:16px 16px 6px} header h1{font-size:20px}
+  .theme-toggle{float:none;margin:8px 0 0}
+  .layout{padding:10px 16px}
+  .card{padding:14px}
+  .eq{font-size:15px}
+  table{display:block;overflow-x:auto;font-size:12.5px}
+  tbody{display:table;width:100%}
+  td.num{white-space:normal}
+  th,td{padding:5px 5px}
+}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Grading a Solar Wafer: Lifetime and Photoluminescence</h1>
+  <div class="sub">PHYS 336 · Physics of Semiconductor Devices · KFUPM, Term 261 · Course project, Idea 4 · Abdullah Alsultan</div>
+  <button class="btn theme-toggle" id="themeBtn" title="Switch light / dark">◐ Theme</button>
+  <div class="qbox"><b>Engineering question.</b> How does a solar factory know — without touching a wafer — how good a solar cell it will make?
+  <span class="note">Answer in one line: light the wafer, read how many excess carriers it holds (by photoconductance or by its photoluminescence glow); that number sets the quasi-Fermi-level split, which <i>is</i> the voltage the finished cell can reach.</span></div>
+</header>
+
+<nav class="tabs"><div class="inner" id="tabbar">
+  <button data-tab="t1" class="active">1 · Why it matters</button>
+  <button data-tab="t2">2 · Excess carriers</button>
+  <button data-tab="t3">3 · Photoconductance</button>
+  <button data-tab="t4">4 · Photoluminescence</button>
+  <button data-tab="t5">5 · Calculation &amp; validation</button>
+  <button data-tab="t6">6 · The answer</button>
+  <button data-tab="t7">7 · Sources</button>
+</div></nav>
+
+<div class="layout">
+<aside class="controls" id="controls">
+  <h2>The wafer</h2>
+  <div class="presets">
+    <button data-preset="ps6" title="Problem Set 6 wafer">PS6 wafer</button>
+    <button data-preset="perc" title="Passivated industrial p-type wafer">Industrial, passivated</button>
+    <button data-preset="ascut" title="No passivation: surfaces dominate">As-cut (unpassivated)</button>
+    <button data-preset="limit" title="Richter et al. 2013 conditions">Intrinsic limit</button>
+  </div>
+  <div class="ctl"><label>Acceptor doping N<sub>a</sub> <b id="v_Na"></b></label>
+    <input type="range" id="s_Na" min="0" max="1000"><div class="hint" id="h_Na"></div></div>
+  <div class="ctl"><label>Thickness W <b id="v_W"></b></label>
+    <input type="range" id="s_W" min="50" max="400" step="5"></div>
+  <div class="ctl"><label>Bulk (SRH) lifetime τ<sub>SRH</sub> <b id="v_tau"></b></label>
+    <input type="range" id="s_tau" min="0" max="1000"><div class="hint">Defects and impurities (Neamen 6.5). Injection-independent.</div></div>
+  <div class="ctl"><label>Surface recombination velocity S <b id="v_S"></b></label>
+    <input type="range" id="s_S" min="0" max="1000"><div class="hint">Both faces. ≲10 cm/s passivated · ~10⁵ cm/s bare (Neamen 6.6)</div></div>
+  <div class="ctl"><label>Illumination <b id="v_suns"></b></label>
+    <input type="range" id="s_suns" min="0" max="1000"></div>
+  <div class="ctl"><label>Absorbed photocurrent at 1 sun J<sub>ph</sub> <b id="v_J"></b></label>
+    <input type="range" id="s_J" min="300" max="433"><div class="hint">43.3 mA/cm² = every AM1.5G photon above E<sub>g</sub> absorbed (upper bound)</div></div>
+  <div class="ctl"><label>Intrinsic carrier density n<sub>i</sub></label>
+    <select id="s_ni"><option value="10000000000">1.00×10¹⁰ cm⁻³ (course value)</option><option value="9650000000">9.65×10⁹ cm⁻³ (Altermatt 2003)</option></select></div>
+  <div class="ctl"><label><span><input type="checkbox" id="s_int" checked> Intrinsic recombination (Auger + radiative)</span></label></div>
+  <div class="out" id="liveOut"></div>
+  <div class="note small" style="margin-top:8px">T = 300 K throughout (kT = 0.026 eV). <span class="tag calc">calc</span> = computed by this page.</div>
+</aside>
+
+<main>
+<!-- ============================== TAB 1 ============================== -->
+<section class="tab active" id="t1">
+  <div class="card">
+    <h2>1 · Why a factory grades wafers</h2>
+    <p>A solar factory turns billions of silicon wafers into cells every year. The wafer's <b>minority-carrier lifetime</b> τ — how long a light-made electron survives before it recombines — fixes the best voltage any cell made from it can reach. Measuring τ before the expensive steps (diffusion, passivation, metallisation) lets the factory reject, price or sort each wafer, and catch a bad furnace or ingot within minutes.</p>
+    <div class="grid3">
+      <div class="stat"><div class="v">502 GW</div><div class="l"><span class="tag in">sourced</span>PV modules shipped in 2023 (ITRPV 15th ed.) [15]</div></div>
+      <div class="stat"><div class="v" id="wafersPerSec">≈ 2,200 /s</div><div class="l"><span class="tag calc">calc</span>wafers per second this implies (M10 wafer ≈ 7.3 W) — see below</div></div>
+      <div class="stat"><div class="v">&gt; 10,000 /h</div><div class="l"><span class="tag in">sourced</span>inline PL wafer inspection, BT Imaging i5 (2025); 3,600/h in 2010 [16]</div></div>
+    </div>
+    <p class="note" style="margin-top:8px">Wafer count: an M10 wafer is 182 mm × 182 mm ≈ 330 cm². At 0.1 W/cm² (1 sun) and 22 % efficiency it makes ≈ 7.3 W, so 502 GW ÷ 7.3 W ≈ 6.9×10¹⁰ wafers per year ≈ 2,200 per second. <span class="tag as">estimate</span></p>
+  </div>
+
+  <div class="card">
+    <h3>From physics to product: the chain this page follows</h3>
+    <div class="eq" style="font-family:inherit;font-size:14.5px;white-space:normal">
+      bulk + surface defects → <b>τ<sub>eff</sub></b> (Tab 2) → light: <b>Δn = G τ<sub>eff</sub></b> → quasi-Fermi levels split: <b>E<sub>Fn</sub> − E<sub>Fp</sub></b> → <b>implied V<sub>oc</sub></b> = (E<sub>Fn</sub> − E<sub>Fp</sub>)/e (Tabs 2, 5) → cell voltage → efficiency and price (Tab 6)
+    </div>
+    <p>Two contactless tools read Δn: <b>photoconductance</b> (Tab 3) measures the extra conductance the carriers add; <b>photoluminescence</b> (Tab 4) photographs the light they emit when they recombine radiatively.</p>
+    <h3>Performance target and constraint <span class="tag in">sourced</span></h3>
+    <table>
+      <tr><th>Quantity</th><th>Value</th><th>Source</th></tr>
+      <tr><td>Voltage per cell of a p-type (Ga-doped) PERC module, LONGi Hi-MO 5 LR5-72HPH-540M</td><td class="num">49.50 V ÷ 72 = <b>0.6875 V</b> (STC, 25 °C)</td><td>[14]</td></tr>
+      <tr><td>Intrinsic limit for a silicon cell (Auger + radiative only, 110 µm, undoped)</td><td class="num"><b>761 mV</b>, 29.4 %</td><td>[10, 11]</td></tr>
+      <tr><td>Measurement time available inline</td><td class="num">≲ 0.36 s per wafer at 10,000 wafers/h</td><td>[16] <span class="tag calc">calc</span></td></tr>
+    </table>
+    <h3>The trade-offs this project answers</h3>
+    <ul>
+      <li><b>Speed vs. absolute accuracy:</b> photoconductance gives an absolute, injection-resolved lifetime of one spot; PL imaging gives a whole-wafer map in under a second but needs calibration (Tab 6).</li>
+      <li><b>Thickness:</b> a thinner wafer holds a higher Δn for the same light (less volume to recombine in) but is more sensitive to its surfaces, τ<sub>s</sub> ≈ W/2S (Tab 2).</li>
+      <li><b>The physical limit:</b> even a perfect wafer loses carriers by Auger and radiative recombination — no wafer exceeds ≈ 0.76 V (Tabs 5, 6).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>This wafer, right now <span class="tag calc">calc</span></h3>
+    <div class="grid3" id="nowStats"></div>
+    <div class="callout info" id="nowText"></div>
+  </div>
+</section>
+
+<!-- ============================== TAB 2 ============================== -->
+<section class="tab" id="t2">
+  <div class="card">
+    <h2>2 · Excess carriers under light: lifetime and quasi-Fermi levels</h2>
+    <h3>Generation</h3>
+    <p>Each absorbed photon with hν &gt; E<sub>g</sub> makes one electron–hole pair. Spread evenly through the thickness (assumption; valid when L ≳ W, see below):</p>
+    <div class="eq">G = X · J<sub>ph</sub> / (e W) <span class="n">(X = suns)</span></div>
+    <p id="genLine"></p>
+    <h3>Recombination: four parallel channels (Neamen 6.4–6.6)</h3>
+    <div class="eq">1/τ<sub>eff</sub> = 1/τ<sub>SRH</sub> + 1/τ<sub>rad</sub> + 1/τ<sub>Auger</sub> + 1/τ<sub>s</sub> <span class="n">rates add</span></div>
+    <table>
+      <tr><th>Channel</th><th>Rate (cm⁻³ s⁻¹)</th><th>What it means</th></tr>
+      <tr><td>SRH (defects)</td><td>U = (np − n<sub>i</sub>²) / [τ<sub>p0</sub>(n + n′) + τ<sub>n0</sub>(p + p′)] → Δn/τ<sub>n0</sub> (p-type, low injection)</td><td>Traps near midgap catch an electron, then a hole [4, 22]. Set by the τ<sub>SRH</sub> slider.</td></tr>
+      <tr><td>Radiative</td><td>R<sub>rad</sub> = B(np − n<sub>i</sub>²), B = 4.73×10⁻¹⁵ cm³/s</td><td>Band-to-band photon emission — the PL signal (Tab 4) [6]. Weak: Si has an indirect gap.</td></tr>
+      <tr><td>Auger</td><td>(np − n<sub>i</sub>²)(2.5×10⁻³¹ g<sub>eeh</sub> n<sub>0</sub> + 8.5×10⁻³² g<sub>ehh</sub> p<sub>0</sub> + 3.0×10⁻²⁹ Δn<sup>0.92</sup>)</td><td>Energy given to a third carrier. Grows with doping and injection; sets the ultimate limit [5].</td></tr>
+      <tr><td>Surface</td><td>τ<sub>s</sub> = W/(2S) + (1/D)(W/π)²</td><td>Dangling bonds at both faces (Neamen 6.6). First term: surface-limited; second: diffusion-limited [7].</td></tr>
+    </table>
+    <h3>Steady state</h3>
+    <div class="eq">G = R(Δn) = Δn / τ<sub>eff</sub>(Δn) &nbsp;⇒&nbsp; Δn = G τ<sub>eff</sub> <span class="n">solved numerically (bisection)</span></div>
+    <p>This is the PS6 rate equation dΔn/dt = G − Δn/τ in steady state. Because τ<sub>eff</sub> depends on Δn (Auger, surface diffusion), the page solves it self-consistently.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="plotwrap"><div class="cap">Effective lifetime vs. excess density — each channel and the total. ● = this wafer's operating point.</div><svg class="plot" id="p_tau"></svg><div class="legend" id="lg_tau"></div></div>
+    <div class="plotwrap"><div class="cap">Band diagram to scale: dark (one E<sub>F</sub>) vs. lit (E<sub>Fn</sub>, E<sub>Fp</sub>). The split is the implied V<sub>oc</sub>.</div><svg class="plot" id="p_band"></svg></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>Quasi-Fermi levels and the implied open-circuit voltage</h3>
+    <div class="eq">n = n<sub>i</sub> e<sup>(E<sub>Fn</sub> − E<sub>Fi</sub>)/kT</sup>, &nbsp; p = n<sub>i</sub> e<sup>(E<sub>Fi</sub> − E<sub>Fp</sub>)/kT</sup> &nbsp;⇒&nbsp; np = n<sub>i</sub>² e<sup>(E<sub>Fn</sub> − E<sub>Fp</sub>)/kT</sup> <span class="n">Neamen 6.4</span></div>
+    <div class="eq">iV<sub>oc</sub> = (E<sub>Fn</sub> − E<sub>Fp</sub>)/e = (kT/e) ln[(N<sub>a</sub> + Δn) Δn / n<sub>i</sub>²] <span class="n">p-type, n<sub>0</sub> ≪ Δn</span></div>
+    <p>In the dark np = n<sub>i</sub>²: one Fermi level, zero voltage. Light pushes np above n<sub>i</sub>²; the split is the largest voltage the cell's contacts can deliver. At low injection (Δn ≪ N<sub>a</sub>) iV<sub>oc</sub> ≈ (kT/e) ln(N<sub>a</sub> G τ<sub>eff</sub>/n<sub>i</sub>²): <b>every decade of τ is worth kT ln10 = 60 mV</b>.</p>
+    <div id="qflTable"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="plotwrap"><div class="cap">Expected trend: implied V<sub>oc</sub> vs. bulk lifetime (1 sun). Dashed: 60 mV per decade. It saturates at the intrinsic limit.</div><svg class="plot" id="p_vtau"></svg><div class="legend" id="lg_vtau"></div></div>
+    <div class="plotwrap"><div class="cap">Trade-off: implied V<sub>oc</sub> vs. thickness for several S (τ<sub>SRH</sub> and J<sub>ph</sub> fixed). Thin wafers win only if their surfaces are passivated.</div><svg class="plot" id="p_vW"></svg><div class="legend" id="lg_vW"></div></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>Diffusion length: is "uniform Δn" valid?</h3>
+    <div class="eq">L = √(D τ<sub>eff</sub>), &nbsp; D = (kT/e) μ <span class="n">Einstein relation</span></div>
+    <div id="Lline"></div>
+    <p class="note">Mobility: Caughey–Thomas fit with Masetti et al. parameters for the total doping [9, 24]; the ambipolar D<sub>a</sub> = (n + p)/(n/D<sub>p</sub> + p/D<sub>n</sub>) is used, which equals the minority D<sub>n</sub> at low injection (Neamen 6.3).</p>
+  </div>
+</section>
+
+<!-- ============================== TAB 3 ============================== -->
+<section class="tab" id="t3">
+  <div class="card">
+    <h2>3 · Photoconductance: the flash, the coil and the reference cell</h2>
+    <p>Sinton &amp; Cuevas (1996) [1]: place the wafer on an RF coil and fire a photographic flash. The extra carriers raise the conductance, which loads the coil's oscillating field (eddy currents) — measured without contacts. A calibrated <b>reference cell</b> beside the wafer records the light, giving G(t). The ratio gives τ<sub>eff</sub> over a whole sweep of Δn in one flash.</p>
+    <div class="grid2">
+      <div><svg class="plot" id="p_tool" viewBox="0 0 420 230"></svg></div>
+      <div>
+        <div class="eq">Δσ W = e Δn (μ<sub>n</sub> + μ<sub>p</sub>) W <span class="n">sheet photoconductance</span></div>
+        <div class="eq">τ<sub>eff</sub> = Δn / (G − dΔn/dt) <span class="n">generalized [8]</span></div>
+        <ul class="small">
+          <li><b>Quasi-steady-state (QSS):</b> τ ≪ flash decay ⇒ dΔn/dt ≈ 0 ⇒ τ = Δn/G.</li>
+          <li><b>Transient:</b> after the flash, G = 0 ⇒ τ = −Δn/(dΔn/dt) (PS6 Problem 1).</li>
+          <li><b>Generalized:</b> keeps both terms; valid for any τ [8].</li>
+        </ul>
+      </div>
+    </div>
+    <h3>Instrument <span class="tag in">sourced</span></h3>
+    <p class="small">Sinton WCT-120: QSSPC and transient photoconductance modes; lifetimes from 10 ns to &gt; 10 ms; implied V<sub>oc</sub> vs. illumination (implied I–V) without contacts; samples up to 16 × 16 cm² (WCT-120MX: 230 mm wafers) [13].</p>
+  </div>
+
+  <div class="card">
+    <h3>Simulate a flash <span class="tag calc">calc</span></h3>
+    <div class="row">
+      <div class="inline-ctl">Peak light <input type="range" id="f_peak" min="0" max="1000"><b id="f_peak_v"></b></div>
+      <div class="inline-ctl">Flash decay constant <input type="range" id="f_tf" min="0" max="1000"><b id="f_tf_v"></b></div>
+    </div>
+    <p class="note">The flash is modelled as G(t) = G<sub>pk</sub> e<sup>−t/t<sub>f</sub></sup> <span class="tag as">assumption</span>. The page integrates dΔn/dt = G(t) − R(Δn) and then analyses its own "measurement" three ways.</p>
+    <div class="grid2">
+      <div class="plotwrap"><div class="cap">What the instrument records: reference-cell light (G) and photoconductance (∝ Δn), normalised.</div><svg class="plot" id="p_flash"></svg><div class="legend" id="lg_flash"></div></div>
+      <div class="plotwrap"><div class="cap">Lifetime extracted from that record vs. Δn — QSS, generalized, and the true τ<sub>eff</sub>.</div><svg class="plot" id="p_flashtau"></svg><div class="legend" id="lg_flashtau"></div></div>
+    </div>
+    <div class="callout" id="flashVerdict"></div>
+  </div>
+
+  <div class="card">
+    <h3>Task (i): from a measured ΔσW to Δn and τ<sub>eff</sub> <span class="tag calc">calc</span></h3>
+    <div class="row">
+      <div class="inline-ctl">Measured ΔσW <input type="number" id="m_sig" value="0.922" step="0.01"> mS</div>
+      <div class="inline-ctl">Light <input type="number" id="m_suns" value="1" step="0.1"> suns</div>
+    </div>
+    <div id="m_out" style="margin-top:8px"></div>
+    <p class="note">Default 0.922 mS = PS6's Δσ(0) = 51.2×10⁻³ (Ω·cm)⁻¹ × 180 µm. Uses this wafer's N<sub>a</sub>, W, J<sub>ph</sub> and the mobilities at that doping.</p>
+  </div>
+
+  <div class="card">
+    <h3>Pitfalls an examiner may ask about</h3>
+    <ul class="small">
+      <li><b>Subtract the dark conductance first</b> (PS6 1(c)(iii)): only Δσ decays to zero; σ<sub>0</sub> = e(μ<sub>n</sub>n<sub>0</sub> + μ<sub>p</sub>p<sub>0</sub>) does not. The coil's dark reading is zeroed before the flash.</li>
+      <li><b>Mobility sum</b> μ<sub>n</sub> + μ<sub>p</sub> must be known at the doping <i>and</i> injection level; carrier–carrier scattering lowers it at high Δn.</li>
+      <li><b>Trapping and depletion-region modulation</b> add extra conductance at low Δn and make τ look too long [18, 23]. PL imaging is immune to both [2].</li>
+      <li><b>Optical factor:</b> the fraction of light the wafer absorbs (coating, texture) sets G; it is an input, here J<sub>ph</sub>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================== TAB 4 ============================== -->
+<section class="tab" id="t4">
+  <div class="card">
+    <h2>4 · Photoluminescence: why bright means good</h2>
+    <p>The radiative channel of Tab 2 emits a photon for each event. Its rate is B(np − n<sub>i</sub>²), so the glow measures np directly — the same product that sets the voltage (Trupke et al. 2006 [2]; generalized Planck law [20, 21]):</p>
+    <div class="eq">I<sub>PL</sub> ∝ B (np − n<sub>i</sub>²) W ≈ B (N<sub>a</sub> + Δn) Δn W</div>
+    <div class="eq">I<sub>PL</sub>(E) ∝ α(E) E² e<sup>−(E − Δμ)/kT</sup>, &nbsp; Δμ = E<sub>Fn</sub> − E<sub>Fp</sub> = e·iV<sub>oc</sub> <span class="n">⇒ iV<sub>oc</sub> = (kT/e) ln(I<sub>PL</sub>/C)</span></div>
+    <p><b>Ten times brighter = 60 mV more voltage.</b> A camera therefore photographs a voltage map of the wafer. The constant C (optics, camera, reflection) is found once by comparing with a photoconductance measurement [19]. Researchers use exactly this to track wafers: ΔV<sub>oc</sub> ≈ (kT/e) ln(I<sub>PL</sub>/I<sub>PL,0</sub>) [26].</p>
+    <div class="grid2">
+      <div class="plotwrap"><div class="cap">Shape of the room-temperature PL spectrum (simplified phonon-assisted model). Peak ≈ 1.10 eV ≈ 1120 nm (measured ≈ 1130–1140 nm).</div><svg class="plot" id="p_spec"></svg></div>
+      <div class="small">
+        <h3>How the image is taken</h3>
+        <ul>
+          <li>Excite with a near-IR laser or LEDs (above E<sub>g</sub>) over the whole wafer.</li>
+          <li>A long-pass filter blocks the excitation; the camera sees only the ≈ 1.1 µm glow.</li>
+          <li>Silicon CCDs barely see 1.1 µm (the wafer is nearly transparent there for the same reason), so cooled Si or InGaAs cameras are used.</li>
+          <li>Exposure ≈ 1 s or less: fast enough to run inline [2, 16].</li>
+          <li>Dark regions = short lifetime: dislocation clusters, grain boundaries, impurity rings, edges.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>A simulated PL image of this wafer <span class="tag calc">calc</span></h3>
+    <div class="row">
+      <div class="inline-ctl">Defect severity <input type="range" id="d_sev" min="0" max="100" value="60"><b id="d_sev_v"></b></div>
+      <div class="inline-ctl">Show <select id="d_map" style="width:auto"><option value="pl">PL intensity</option><option value="voc">implied V<sub>oc</sub></option><option value="tau">τ<sub>eff</sub></option></select></div>
+      <button class="btn" id="d_new">New wafer</button>
+    </div>
+    <p class="note">Each pixel is solved with this page's model. Defects reduce the local τ<sub>SRH</sub> (dislocation clusters, a ring); the edge has extra surface recombination. <span class="tag as">synthetic image</span> — lateral carrier diffusion (blur over ~L) is ignored.</p>
+    <div class="grid2">
+      <div style="text-align:center"><canvas id="c_wafer" width="96" height="96" style="width:100%;max-width:360px"></canvas><div class="legend" id="lg_wafer" style="justify-content:center"></div></div>
+      <div>
+        <div id="waferStats"></div>
+        <div class="plotwrap" style="margin-top:8px"><div class="cap">Distribution of implied V<sub>oc</sub> over the wafer area</div><svg class="plot" id="p_hist"></svg></div>
+      </div>
+    </div>
+    <div class="callout info small"><b>Sorting rule (BT Imaging patent US 9,103,792, claim 1 [12]):</b> take a PL image of each whole wafer, extract the area-averaged defect density, classify the wafer as a whole, and bin it by predicted cell performance. "Lower dislocation densities correlate with higher open circuit voltages." This page bins by the dark-area fraction and the area-averaged iV<sub>oc</sub>.</div>
+  </div>
+</section>
+
+<!-- ============================== TAB 5 ============================== -->
+<section class="tab" id="t5">
+  <div class="card">
+    <h2>5 · The calculation: implied V<sub>oc</sub>, checked against independent results</h2>
+    <h3>Hand calculation (the board number)</h3>
+    <div class="eq">N<sub>a</sub> = 10¹⁶, Δn = 10¹⁵ cm⁻³: &nbsp; iV<sub>oc</sub> = 0.026 ln[(1.1×10¹⁶)(10¹⁵)/10²⁰] = 0.026 ln(1.1×10¹¹) = 0.026 × 25.42 = <b>0.661 V</b></div>
+    <p id="boardCheck"></p>
+  </div>
+
+  <div class="card">
+    <h3>Validation table <span class="tag calc">calc</span> — the page's own model vs. independent results</h3>
+    <div id="valTable"></div>
+    <div class="callout info small" id="valNotes"></div>
+  </div>
+
+  <div class="card">
+    <h3>Against a real cell: the module datasheet</h3>
+    <p>A LONGi Hi-MO 5 module (Ga-doped p-type PERC, 72 cells: 144 half-cells, 72 in series in each half) has V<sub>oc</sub> = 49.50 V at STC [14] → <b>0.6875 V per cell</b> at 25 °C.</p>
+    <div id="moduleCmp"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="plotwrap"><div class="cap">Implied J–V of this wafer (Sinton–Cuevas method [1]): J = J<sub>sc</sub>(1 − X), V = iV<sub>oc</sub>(X). No series resistance.</div><svg class="plot" id="p_jv"></svg></div>
+    <div class="card" style="margin:0"><h3>Implied cell figures <span class="tag calc">calc</span></h3><div id="jvStats"></div>
+    <p class="note">These are upper bounds: a finished cell adds emitter and contact recombination, shading and series resistance.</p></div>
+  </div>
+</section>
+
+<!-- ============================== TAB 6 ============================== -->
+<section class="tab" id="t6">
+  <div class="card">
+    <h2>6 · Which tool on the production line, and why?</h2>
+    <table>
+      <tr><th>Criterion</th><th>Photoconductance (QSSPC)</th><th>PL imaging</th></tr>
+      <tr><td>What it measures</td><td>Δσ → Δn, absolute (needs μ<sub>n</sub>+μ<sub>p</sub>)</td><td>Glow ∝ np → relative iV<sub>oc</sub>; absolute after calibration</td></tr>
+      <tr><td>Spatial information</td><td>One spot (coil area, a few cm)</td><td>Whole wafer, ~10⁶ pixels</td></tr>
+      <tr><td>Injection dependence τ(Δn)</td><td><b>Yes</b> — one flash sweeps Δn</td><td>One illumination per image</td></tr>
+      <tr><td>Speed</td><td>Seconds per spot (offline)</td><td>&lt; 1 s per wafer; &gt; 10,000 wafers/h [16]</td></tr>
+      <tr><td>Artefacts</td><td>Trapping, depletion-region modulation at low Δn [18]</td><td>Immune to both [2]; affected by reflection, reabsorption, lateral diffusion</td></tr>
+      <tr><td>Use</td><td>Calibration, process development, injection-dependent analysis</td><td>Inline sorting / binning of every wafer [12]</td></tr>
+    </table>
+    <div class="callout ok"><b>Answer.</b> Put <b>PL imaging inline</b> on every wafer — it is the only method fast enough to see every wafer and it shows <i>where</i> the defects are — and keep a <b>QSSPC tester offline</b> to calibrate the PL signal into absolute Δn and implied V<sub>oc</sub> and to measure τ(Δn). The two are complementary: same physics (Δn), two read-outs.</div>
+  </div>
+
+  <div class="card">
+    <h3>The limit: what lifetime does a given cell voltage need? <span class="tag calc">calc</span></h3>
+    <div class="row"><div class="inline-ctl">Target iV<sub>oc</sub> at 1 sun <input type="range" id="l_V" min="550" max="780" value="700"><b id="l_V_v"></b></div></div>
+    <div id="limitOut"></div>
+    <div class="plotwrap" style="margin-top:8px"><div class="cap">Effective lifetime needed vs. target voltage (this wafer's N<sub>a</sub>, W, J<sub>ph</sub>). Red: the most any wafer can have (Auger + radiative only).</div><svg class="plot" id="p_limit"></svg><div class="legend" id="lg_limit"></div></div>
+    <p>Low injection: τ<sub>req</sub> = n<sub>i</sub>² e<sup>eV/kT</sup> / (N<sub>a</sub> G) — <b>ten times more lifetime for every 60 mV</b>. Near 0.75 V the required Δn becomes comparable to N<sub>a</sub>, Auger recombination (∝ Δn², Δn³) rises faster than G can supply, and the requirement crosses the intrinsic ceiling: that crossing is the voltage limit of silicon (≈ 0.76 V, [10]).</p>
+  </div>
+
+  <div class="card">
+    <h3>Conclusions</h3>
+    <ol>
+      <li>The factory reads the <b>excess-carrier density</b> under light; through np = n<sub>i</sub>² e<sup>(E<sub>Fn</sub>−E<sub>Fp</sub>)/kT</sup> it is a voltage before any junction exists.</li>
+      <li>At low injection each decade of τ<sub>eff</sub> is 60 mV; surfaces must be passivated (S ≲ 10 cm/s) or they, not the bulk, set τ<sub>eff</sub>.</li>
+      <li>Photoconductance is absolute and injection-resolved; PL imaging is spatial and fast; production uses PL inline, calibrated by photoconductance.</li>
+      <li>No silicon wafer can exceed ≈ 0.76 V: intrinsic Auger and radiative recombination. Today's industrial PERC cells (0.6875 V per cell) are ≈ 70 mV below it; the best laboratory cells (≈ 0.74–0.75 V) are within 15–20 mV [11].</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================== TAB 7 ============================== -->
+<section class="tab" id="t7">
+  <div class="card">
+    <h2>7 · Sources, checks and AI use</h2>
+    <h3>Inputs and their sources</h3>
+    <table id="paramTable"></table>
+  </div>
+  <div class="card">
+    <h3>Automatic checks <span class="tag calc">calc</span></h3>
+    <div id="checks"></div>
+  </div>
+  <div class="card">
+    <h3>Assumptions, valid range, and where the model stops being reliable</h3>
+    <ul class="small" id="limits">
+      <li><span class="tag as">assumption</span> T = 300 K, kT = 0.026 eV (course constants). Module data are at 25 °C: −2 mV/K ⇒ ≈ +4 mV for 25 °C vs. 27 °C.</li>
+      <li><span class="tag as">assumption</span> Uniform Δn through the thickness. Valid when L<sub>eff</sub> ≳ W; the page warns when L &lt; W (then the real Δn piles up near the lit face).</li>
+      <li><span class="tag as">assumption</span> SRH lifetime independent of injection (true for Δn ≪ N<sub>a</sub>; real defects such as Fe or B–O change τ with Δn).</li>
+      <li><span class="tag as">assumption</span> Generation from J<sub>ph</sub> spread evenly; no reflection or parasitic absorption beyond J<sub>ph</sub>.</li>
+      <li><span class="tag as">assumption</span> Mobility independent of injection (carrier–carrier scattering ignored) — overestimates Δσ above Δn ≈ 10¹⁶ cm⁻³.</li>
+      <li><span class="tag as">assumption</span> No band-gap narrowing and B<sub>rel</sub> = 1 in the Richter model: valid for N<sub>a</sub> ≲ 10¹⁷ cm⁻³ and Δn ≲ 10¹⁷ cm⁻³.</li>
+      <li><span class="tag lim">limit</span> Doping range 10¹⁴–10¹⁷ cm⁻³, p-type only, non-degenerate (Boltzmann statistics, Neamen 4.3).</li>
+      <li><span class="tag lim">limit</span> Implied V<sub>oc</sub> is a property of the wafer, not of a finished cell: emitter, contacts, shading and series resistance are not modelled.</li>
+      <li><span class="tag lim">limit</span> PL image: synthetic defect map; no lateral diffusion blur, photon reabsorption or camera response.</li>
+      <li><span class="tag lim">limit</span> Flash: ideal exponential decay; no trapping or depletion-region modulation in the simulated photoconductance.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>References</h3>
+    <ol class="refs" id="refs">
+      <li>R. A. Sinton and A. Cuevas, "Contactless determination of current–voltage characteristics and minority-carrier lifetimes in semiconductors from quasi-steady-state photoconductance data," <i>Appl. Phys. Lett.</i> 69, 2510 (1996). doi:10.1063/1.117723</li>
+      <li>T. Trupke, R. A. Bardos, M. C. Schubert and W. Warta, "Photoluminescence imaging of silicon wafers," <i>Appl. Phys. Lett.</i> 89, 044107 (2006). doi:10.1063/1.2234747</li>
+      <li>PV-Manufacturing.org (UNSW), Metrology: "Photoconductance decay", "Photoluminescence imaging", "Recombination processes". https://pv-manufacturing.org/metrology/</li>
+      <li>D. A. Neamen, <i>Semiconductor Physics and Devices</i>, 4th ed. (McGraw-Hill, 2012): §4.3, §5.1–5.3, §6.1–6.6.</li>
+      <li>A. Richter, S. W. Glunz, F. Werner, J. Schmidt and A. Cuevas, "Improved quantitative description of Auger recombination in crystalline silicon," <i>Phys. Rev. B</i> 86, 165202 (2012). doi:10.1103/PhysRevB.86.165202</li>
+      <li>T. Trupke et al., "Temperature dependence of the radiative recombination coefficient of intrinsic crystalline silicon," <i>J. Appl. Phys.</i> 94, 4930 (2003). B = 4.73×10⁻¹⁵ cm³/s at 300 K.</li>
+      <li>A. B. Sproul, "Dimensionless solution of the equation describing the effect of surface recombination on carrier decay in semiconductors," <i>J. Appl. Phys.</i> 76, 2851 (1994).</li>
+      <li>H. Nagel, C. Berge and A. G. Aberle, "Generalized analysis of quasi-steady-state and quasi-transient measurements of carrier lifetimes in semiconductors," <i>J. Appl. Phys.</i> 86, 6218 (1999).</li>
+      <li>G. Masetti, M. Severi and S. Solmi, "Modeling of carrier mobility against carrier concentration in arsenic-, phosphorus-, and boron-doped silicon," <i>IEEE Trans. Electron Devices</i> 30, 764 (1983).</li>
+      <li>A. Richter, M. Hermle and S. W. Glunz, "Reassessment of the limiting efficiency for crystalline silicon solar cells," <i>IEEE J. Photovolt.</i> 3, 1184 (2013).</li>
+      <li>C. Battaglia, A. Cuevas and S. De Wolf, "High-efficiency crystalline silicon solar cells: status and perspectives," <i>Energy Environ. Sci.</i> 9, 1552 (2016). doi:10.1039/C5EE03380B — quotes the limit: 761 mV, 43.3 mA/cm², FF 89.3 %, 29.4 % at 110 µm.</li>
+      <li>T. Trupke and R. A. Bardos (BT Imaging Pty Ltd), "Wafer imaging and processing method and apparatus," US Patent 9,103,792 B2, granted 11 Aug 2015 (priority 31 Mar 2008).</li>
+      <li>Sinton Instruments WCT-120 lifetime tester: product listing (energy-xprt.com) and IPVF equipment page (ipvf.fr/machines/sinton-wct-120): QSSPC and transient modes, 10 ns to &gt; 10 ms, samples to 16 × 16 cm².</li>
+      <li>LONGi LR5-72HPH-540M electrical data at STC: V<sub>oc</sub> = 49.50 V, P<sub>max</sub> = 540 W (solarproof.com.au product page); Hi-MO 5 uses Ga-doped M10 wafers and half-cut PERC cells, 72-cell format (PV Tech, 29 June 2020).</li>
+      <li>ITRPV 15th edition (2024), reported by TaiyangNews, "502 GW Global Solar PV Module Shipments In 2023," 6 June 2024.</li>
+      <li>BT Imaging inline PL tools: iLS-X1, 3,600 wafers/h (Compound Semiconductor, 7 Sept 2010); i5 wafer tool, "over 10,000 wafers per hour" (TaiyangNews, 30 June 2025).</li>
+      <li>P. P. Altermatt et al., "Reassessment of the intrinsic carrier density in crystalline silicon in view of band-gap narrowing," <i>J. Appl. Phys.</i> 93, 1598 (2003): n<sub>i</sub> = 9.65×10⁹ cm⁻³ at 300 K.</li>
+      <li>D. Macdonald and A. Cuevas, "Trapping of minority carriers in multicrystalline silicon," <i>Appl. Phys. Lett.</i> 74, 1710 (1999).</li>
+      <li>T. Trupke, R. A. Bardos and M. D. Abbott, "Self-consistent calibration of photoluminescence and photoconductance lifetime measurements," <i>Appl. Phys. Lett.</i> 87, 184102 (2005).</li>
+      <li>P. Würfel, "The chemical potential of radiation," <i>J. Phys. C</i> 15, 3967 (1982).</li>
+      <li>W. van Roosbroeck and W. Shockley, "Photon-radiative recombination of electrons and holes in germanium," <i>Phys. Rev.</i> 94, 1558 (1954).</li>
+      <li>W. Shockley and W. T. Read, <i>Phys. Rev.</i> 87, 835 (1952); R. N. Hall, <i>Phys. Rev.</i> 87, 387 (1952).</li>
+      <li>A. Cuevas and D. Macdonald, "Measuring and interpreting the lifetime of silicon wafers," <i>Solar Energy</i> 76, 255 (2004).</li>
+      <li>D. M. Caughey and R. E. Thomas, "Carrier mobilities in silicon empirically related to doping and field," <i>Proc. IEEE</i> 55, 2192 (1967).</li>
+      <li>PHYS 336 Problem Set 6 (the lifetime wafer) and Problem Set 7 (the solar-cell junction), Term 261.</li>
+      <li>T. Niewelt et al., "Stability of industrial gallium-doped Czochralski silicon PERC cells and wafers," <i>Sol. Energy Mater. Sol. Cells</i> 266, 112645 (2024). doi:10.1016/j.solmat.2023.112645 — τ<sub>eff</sub> &gt; 1 ms at Δn = 10¹⁵ cm⁻³ for ALD-passivated Cz-Si:Ga (≈ 1 Ω·cm, ≈ 150 µm); uses ΔV<sub>oc</sub> ≈ (kT/e) ln(I<sub>PL</sub>/I<sub>PL0</sub>).</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>How AI was used</h3>
+    <p id="aiUse">I used an AI assistant (Claude, Anthropic) to help write this page's JavaScript and plots, to search for and organise sources, and to draft explanatory text. I checked each equation against Neamen and the cited papers, and I repeated the key results by hand: the generation rate and implied V<sub>oc</sub> of the PS6 wafer (1.5×10¹⁹ cm⁻³s⁻¹, 0.63 V), the board calculation (0.661 V), and the module voltage per cell (0.6875 V). The physics, the choices and the conclusions are my responsibility.</p>
+  </div>
+</section>
+</main>
+</div>
+<footer>PHYS 336 course project · Idea 4 · All calculations run in your browser; no data leave the page. Version 1 (Step 1 working page).</footer>
+
+<script>
+// ===================================================================
+// Physics model: grading a p-type silicon wafer by lifetime and PL
+// All quantities in CGS-practical units: cm, s, cm^-3, V, A, eV.
+// ===================================================================
+const PHYS = {
+  q: 1.6e-19,          // C (course value)
+  kT: 0.026,           // eV at 300 K (course value)
+  ni: 1.0e10,          // cm^-3 (course value; Altermatt 2003 gives 9.65e9)
+  Eg: 1.12,            // eV
+  B: 4.73e-15,         // cm^3/s radiative coefficient, Trupke et al. 2003
+  Jph1sun_max: 43.3,   // mA/cm^2, all above-gap AM1.5G photons (PS6: 2.7e17 cm^-2 s^-1)
+};
+
+// --- Mobility: Caughey-Thomas form, Masetti et al. (1983) low-field parameters (300 K)
+function mobility(Ntot) {
+  const mun = 68.5 + (1414 - 68.5) / (1 + Math.pow(Ntot / 9.2e16, 0.711));
+  const mup = 44.9 + (470.5 - 44.9) / (1 + Math.pow(Ntot / 2.23e17, 0.719));
+  return { mun, mup };
+}
+
+// --- Equilibrium densities for a p-type wafer
+function equilibrium(Na, ni = PHYS.ni) {
+  const p0 = Na, n0 = ni * ni / Na;
+  return { n0, p0 };
+}
+
+// --- Intrinsic recombination: Richter et al., Phys. Rev. B 86, 165202 (2012)
+//     R = (np - ni^2)(2.5e-31 g_eeh n0 + 8.5e-32 g_ehh p0 + 3.0e-29 dn^0.92 + B_rel*B)
+//     B_rel taken as 1 (valid for low-to-moderate doping and injection)
+function R_intrinsic(dn, n0, p0, ni, parts) {
+  const geeh = 1 + 13 * (1 - Math.tanh(Math.pow(n0 / 3.3e17, 0.66)));
+  const gehh = 1 + 7.5 * (1 - Math.tanh(Math.pow(p0 / 7.0e17, 0.63)));
+  const n = n0 + dn, p = p0 + dn;
+  const excess = n * p - ni * ni;
+  const aug = 2.5e-31 * geeh * n0 + 8.5e-32 * gehh * p0 + 3.0e-29 * Math.pow(dn, 0.92);
+  const rad = PHYS.B;
+  if (parts) { parts.auger = excess * aug; parts.rad = excess * rad; }
+  return excess * (aug + rad);
+}
+
+// --- Ambipolar diffusivity (low injection -> minority Dn; high injection -> Da)
+function diffusivity(dn, n0, p0, mob) {
+  const Dn = PHYS.kT * mob.mun, Dp = PHYS.kT * mob.mup;
+  const n = n0 + dn, p = p0 + dn;
+  return { Dn, Dp, Da: (n + p) / (n / Dp + p / Dn) };
+}
+
+// --- Surface lifetime: Sproul, J. Appl. Phys. 76, 2851 (1994), symmetric surfaces
+function tauSurface(S, W, D) {
+  if (S <= 0) return Infinity;
+  return W / (2 * S) + (W / Math.PI) ** 2 / D;
+}
+
+// --- All recombination channels at a given excess density
+// p = {Na, W (cm), tauSRH (s), S (cm/s), ni, intrinsic(bool)}
+function recomb(dn, p) {
+  const { n0, p0 } = equilibrium(p.Na, p.ni);
+  const mob = mobility(p.Na);
+  const D = diffusivity(dn, n0, p0, mob);
+  const parts = {};
+  const Rint = p.intrinsic === false ? 0 : R_intrinsic(dn, n0, p0, p.ni, parts);
+  const tauS = tauSurface(p.S, p.W, D.Da);
+  const R_srh = isFinite(p.tauSRH) ? dn / p.tauSRH : 0;
+  const R_s = isFinite(tauS) ? dn / tauS : 0;
+  const R = R_srh + Rint + R_s;
+  return {
+    R, tauEff: dn / R,
+    tauSRH: p.tauSRH, tauS,
+    tauAug: p.intrinsic === false ? Infinity : dn / (parts.auger || 1e-300),
+    tauRad: p.intrinsic === false ? Infinity : dn / (parts.rad || 1e-300),
+    tauInt: Rint > 0 ? dn / Rint : Infinity,
+    n0, p0, mob, D,
+  };
+}
+
+// --- Average generation rate (uniform over thickness), cm^-3 s^-1
+function generation(suns, Jph1sun_mA, W) {
+  return suns * (Jph1sun_mA * 1e-3) / (PHYS.q * W);
+}
+
+// --- Steady state: solve G = R(dn) by bisection on log(dn)
+function solveDn(G, p) {
+  if (G <= 0) return 0;
+  let lo = 1e2, hi = 1e20;
+  for (let i = 0; i < 200; i++) {
+    const mid = Math.sqrt(lo * hi);
+    if (recomb(mid, p).R > G) hi = mid; else lo = mid;
+    if (hi / lo < 1 + 1e-10) break;
+  }
+  return Math.sqrt(lo * hi);
+}
+
+// --- Implied Voc and quasi-Fermi levels
+function impliedVoc(dn, p) {
+  const { n0, p0 } = equilibrium(p.Na, p.ni);
+  const n = n0 + dn, pp = p0 + dn;
+  return {
+    iVoc: PHYS.kT * Math.log(n * pp / (p.ni * p.ni)),
+    EFn_EFi: PHYS.kT * Math.log(n / p.ni),
+    EFi_EFp: PHYS.kT * Math.log(pp / p.ni),
+    EFi_EF0: PHYS.kT * Math.log(p0 / p.ni),
+    n, p: pp,
+  };
+}
+
+// --- Full steady-state solution at one illumination
+function steadyState(p) {
+  const G = generation(p.suns, p.Jph, p.W);
+  const dn = solveDn(G, p);
+  const r = recomb(dn, p);
+  const v = impliedVoc(dn, p);
+  const mob = r.mob;
+  const sigma0 = PHYS.q * (mob.mun * r.n0 + mob.mup * r.p0);
+  const dSigma = PHYS.q * dn * (mob.mun + mob.mup);
+  const L = Math.sqrt(r.D.Da * r.tauEff);
+  const PL = PHYS.B * (v.n * v.p - p.ni * p.ni) * p.W; // photons cm^-2 s^-1 emitted internally
+  return { G, dn, ...r, ...v, sigma0, dSigma, dSigmaW: dSigma * p.W, L, PL };
+}
+
+// --- Implied J-V (Sinton & Cuevas 1996): J = Jsc(1 - X), V = iVoc(X)
+function impliedJV(p, nPts = 60) {
+  const Jsc = p.Jph; // mA/cm^2 at 1 sun, assumes full collection
+  const pts = [];
+  for (let i = 0; i < nPts; i++) {
+    const X = Math.pow(10, -4 + 4.0 * i / (nPts - 1)); // 1e-4 .. 1 sun
+    const s = steadyState({ ...p, suns: X });
+    pts.push({ X, V: s.iVoc, J: Jsc * (1 - X) });
+  }
+  pts.push({ X: 0, V: 0, J: Jsc });
+  let best = { P: 0 };
+  for (const q of pts) { const P = q.V * q.J; if (P > best.P) best = { P, V: q.V, J: q.J }; }
+  const Voc = steadyState({ ...p, suns: 1 }).iVoc;
+  const pFF = best.P / (Voc * Jsc);
+  return { pts, Voc, Jsc, pFF, Pmax: best.P, eta: best.P / 100 }; // eta: mW/cm^2 / 100
+}
+
+// --- Inverse: tau_eff needed for a target iVoc at a given illumination
+function tauForVoc(Vtarget, p) {
+  const { n0, p0 } = equilibrium(p.Na, p.ni);
+  // (n0+dn)(p0+dn) = ni^2 exp(V/kT)  -> quadratic in dn
+  const K = p.ni * p.ni * Math.exp(Vtarget / PHYS.kT);
+  const b = n0 + p0, c = n0 * p0 - K;
+  const dn = (-b + Math.sqrt(b * b - 4 * c)) / 2;
+  const G = generation(p.suns, p.Jph, p.W);
+  const tauReq = dn / G;
+  const intr = recomb(dn, { ...p, tauSRH: Infinity, S: 0 });
+  return { dn, tauReq, tauIntr: intr.tauEff, possible: tauReq < intr.tauEff };
+}
+
+// --- QSSPC flash simulation: dn/dt = G(t) - R(dn)
+// flash: G(t) = Gpeak * exp(-t/tf) after an instantaneous rise
+function flashSim(p, opts) {
+  const { sunsPeak, tf, tEnd } = opts;
+  const Gpk = generation(sunsPeak, p.Jph, p.W);
+  const out = [];
+  let t = 0, dn = 0;
+  const nOut = 400, dtOut = tEnd / nOut;
+  let nextOut = 0, steps = 0;
+  while (t < tEnd && steps < 400000) {
+    const G = Gpk * Math.exp(-t / tf);
+    const r = recomb(Math.max(dn, 1e2), p);
+    const tau = r.tauEff;
+    let dt = Math.min(tau / 4, tf / 400, dtOut);
+    // exponential integrator (exact for constant tau and G over dt)
+    const dnSS = G * tau;
+    dn = dnSS + (dn - dnSS) * Math.exp(-dt / tau);
+    t += dt; steps++;
+    if (t >= nextOut) {
+      out.push({ t, G: Gpk * Math.exp(-t / tf), dn });
+      nextOut += dtOut;
+    }
+  }
+  // lifetime analyses
+  for (let i = 1; i < out.length - 1; i++) {
+    const a = out[i - 1], b = out[i + 1], o = out[i];
+    const dndt = (b.dn - a.dn) / (b.t - a.t);
+    o.tauQSS = o.dn / o.G;
+    o.tauGen = o.dn / (o.G - dndt);
+    o.tauTrue = recomb(o.dn, p).tauEff;
+    o.dSigmaW = PHYS.q * o.dn * (mobility(p.Na).mun + mobility(p.Na).mup) * p.W;
+  }
+  return out.slice(1, -1);
+}
+
+// --- Inverse photoconductance: from measured sheet conductance to dn and tau_eff
+function fromPhotoconductance(dSigmaW_S, suns, p) {
+  const mob = mobility(p.Na);
+  const dn = dSigmaW_S / (PHYS.q * (mob.mun + mob.mup) * p.W);
+  const G = generation(suns, p.Jph, p.W);
+  return { dn, tau: dn / G, mob };
+}
+
+// --- PL spectrum shape (generalized Planck law, simplified phonon-assisted absorption)
+// I(E) ∝ alpha(E) E^2 exp(-E/kT); alpha from TO-phonon absorption and emission branches
+function plSpectrum() {
+  const Ep = 0.058, kT = PHYS.kT, Eg = PHYS.Eg - 0.0147; // excitonic gap (binding 14.7 meV)
+  const nb = 1 / (Math.exp(Ep / kT) - 1);
+  const pts = [];
+  for (let E = 0.95; E <= 1.25; E += 0.0015) {
+    let a = 0;
+    if (E > Eg - Ep) a += nb * (E - Eg + Ep) ** 2;
+    if (E > Eg + Ep) a += (nb + 1) * (E - Eg - Ep) ** 2;
+    pts.push({ E, I: a * E * E * Math.exp(-(E - Eg) / kT) });
+  }
+  // Gaussian broadening (sigma = 15 meV) as a stand-in for thermal and phonon broadening
+  const sg = 0.015, br = pts.map(p => ({ ...p, I: pts.reduce((a, q) => a + q.I * Math.exp(-((q.E - p.E) ** 2) / (2 * sg * sg)), 0) }));
+  pts.splice(0, pts.length, ...br);
+  const m = Math.max(...pts.map(p => p.I));
+  pts.forEach(p => { p.I /= m; p.lam = 1239.84 / p.E; });
+  return pts;
+}
+
+
+// ===================================================================
+// UI: controls, plots and tabs
+// ===================================================================
+const $ = id => document.getElementById(id);
+const SUP = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻", "+": "" };
+const sup = s => String(s).split("").map(c => SUP[c] ?? c).join("");
+function sci(x, d = 2) {
+  if (!isFinite(x)) return "∞";
+  if (x === 0) return "0";
+  const e = Math.floor(Math.log10(Math.abs(x)));
+  const m = x / Math.pow(10, e);
+  if (e >= -2 && e <= 3) return Number(x.toPrecision(d + 1)).toString();
+  return `${m.toFixed(d)}×10${sup(e)}`;
+}
+function fmtTime(t) {
+  if (!isFinite(t)) return "∞";
+  if (t >= 1) return t.toPrecision(3) + " s";
+  if (t >= 1e-3) return (t * 1e3).toPrecision(3) + " ms";
+  if (t >= 1e-6) return (t * 1e6).toPrecision(3) + " µs";
+  return (t * 1e9).toPrecision(3) + " ns";
+}
+const mV = v => (v * 1000).toFixed(1) + " mV";
+const Vf = v => v.toFixed(3) + " V";
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// ---------- log slider mapping ----------
+const LOG = {
+  Na: [14, 17], tau: [-6, -2], S: [-1, 5], suns: [-2, 1], peak: [0, 2.3], tf: [-4.3, -2],
+};
+const toVal = (k, s) => Math.pow(10, LOG[k][0] + (LOG[k][1] - LOG[k][0]) * s / 1000);
+const toPos = (k, v) => Math.round(1000 * (Math.log10(v) - LOG[k][0]) / (LOG[k][1] - LOG[k][0]));
+
+// ---------- state ----------
+const state = { Na: 1e16, W: 180e-4, tauSRH: 20e-6, S: 0.1, suns: 1, Jph: 43.2, ni: 1e10, intrinsic: true };
+const PRESETS = {
+  ps6:   { Na: 1e16, W: 180e-4, tauSRH: 20e-6, S: 0.1, suns: 1, Jph: 43.2, ni: 1e10, intrinsic: true },
+  perc:  { Na: 1.5e16, W: 150e-4, tauSRH: 1e-3, S: 10, suns: 1, Jph: 41.0, ni: 1e10, intrinsic: true },
+  ascut: { Na: 1.5e16, W: 150e-4, tauSRH: 1e-3, S: 1e5, suns: 1, Jph: 41.0, ni: 1e10, intrinsic: true },
+  limit: { Na: 1e14, W: 110e-4, tauSRH: 1e-2, S: 0.1, suns: 1, Jph: 43.3, ni: 1e10, intrinsic: true },
+};
+const P = () => ({ ...state, tauSRH: state.tauSRH >= 0.0099 ? Infinity : state.tauSRH, S: state.S <= 0.1001 ? 0 : state.S });
+
+// ---------- SVG plotting ----------
+function niceStep(range, n) {
+  const raw = range / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const r = raw / mag;
+  return (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag;
+}
+function plot(id, o) {
+  const svg = $(id); if (!svg) return;
+  const Wd = 540, Ht = 330, ml = 64, mr = 16, mt = 14, mb = 46;
+  svg.setAttribute("viewBox", `0 0 ${Wd} ${Ht}`);
+  const pw = Wd - ml - mr, ph = Ht - mt - mb;
+  const tx = v => o.xlog ? Math.log10(v) : v, ty = v => o.ylog ? Math.log10(v) : v;
+  const [x0, x1] = o.xlim.map(tx), [y0, y1] = o.ylim.map(ty);
+  const X = v => ml + (tx(v) - x0) / (x1 - x0) * pw;
+  const Y = v => mt + ph - (ty(v) - y0) / (y1 - y0) * ph;
+  const ink = css("--ink"), muted = css("--muted"), line = css("--line");
+  let h = `<rect x="${ml}" y="${mt}" width="${pw}" height="${ph}" fill="none" stroke="${line}"/>`;
+  // ticks
+  const ticks = (lo, hi, log) => {
+    const t = [];
+    if (log) { for (let k = Math.ceil(lo - 1e-9); k <= hi + 1e-9; k++) t.push({ v: k, lab: k === 0 ? "1" : k === 1 ? "10" : "10" + sup(k) }); }
+    else { const st = niceStep(hi - lo, 5); for (let v = Math.ceil(lo / st - 1e-9) * st; v <= hi + 1e-9; v += st) t.push({ v, lab: o.tickFmt ? o.tickFmt(v) : +v.toPrecision(6) + "" }); }
+    return t;
+  };
+  for (const t of ticks(x0, x1, o.xlog)) {
+    const px = ml + (t.v - x0) / (x1 - x0) * pw;
+    h += `<line x1="${px}" x2="${px}" y1="${mt}" y2="${mt + ph}" stroke="${line}" stroke-width="0.6"/>`;
+    h += `<text x="${px}" y="${mt + ph + 16}" font-size="11.5" text-anchor="middle" fill="${muted}">${o.xlog ? t.lab : (o.xTickFmt ? o.xTickFmt(t.v) : t.lab)}</text>`;
+  }
+  for (const t of ticks(y0, y1, o.ylog)) {
+    const py = mt + ph - (t.v - y0) / (y1 - y0) * ph;
+    h += `<line x1="${ml}" x2="${ml + pw}" y1="${py}" y2="${py}" stroke="${line}" stroke-width="0.6"/>`;
+    h += `<text x="${ml - 6}" y="${py + 4}" font-size="11.5" text-anchor="end" fill="${muted}">${o.ylog ? t.lab : (o.yTickFmt ? o.yTickFmt(t.v) : t.lab)}</text>`;
+  }
+  h += `<text x="${ml + pw / 2}" y="${Ht - 8}" font-size="12.5" text-anchor="middle" fill="${ink}">${o.xlabel}</text>`;
+  h += `<text transform="translate(14,${mt + ph / 2}) rotate(-90)" font-size="12.5" text-anchor="middle" fill="${ink}">${o.ylabel}</text>`;
+  h += `<defs><clipPath id="clip_${id}"><rect x="${ml}" y="${mt}" width="${pw}" height="${ph}"/></clipPath></defs><g clip-path="url(#clip_${id})">`;
+  for (const hl of o.hlines || []) h += `<line x1="${ml}" x2="${ml + pw}" y1="${Y(hl.y)}" y2="${Y(hl.y)}" stroke="${hl.color}" stroke-dasharray="${hl.dash || "5 4"}" stroke-width="1.3"/>`;
+  for (const vl of o.vlines || []) h += `<line y1="${mt}" y2="${mt + ph}" x1="${X(vl.x)}" x2="${X(vl.x)}" stroke="${vl.color}" stroke-dasharray="${vl.dash || "5 4"}" stroke-width="1.3"/>`;
+  for (const s of o.series) {
+    const pts = s.pts.filter(p => isFinite(tx(p[0])) && isFinite(ty(p[1])));
+    if (!pts.length) continue;
+    const d = pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1)).join("");
+    if (s.bars) {
+      for (const p of pts) h += `<rect x="${X(p[0]) - s.bw / 2}" y="${Y(p[1])}" width="${s.bw}" height="${Y(o.ylim[0]) - Y(p[1])}" fill="${s.color}" opacity="0.8"/>`;
+    } else {
+      h += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.width || 2.2}" ${s.dash ? `stroke-dasharray="${s.dash}"` : ""} stroke-linejoin="round"/>`;
+    }
+  }
+  for (const m of o.points || []) {
+    h += `<circle cx="${X(m.x)}" cy="${Y(m.y)}" r="${m.r || 5}" fill="${m.color}" stroke="${css("--panel")}" stroke-width="1.5"/>`;
+    if (m.label) h += `<text x="${X(m.x) + (m.dx ?? 8)}" y="${Y(m.y) + (m.dy ?? -8)}" font-size="11.5" fill="${ink}" text-anchor="${m.anchor || "start"}">${m.label}</text>`;
+  }
+  for (const t of o.texts || []) h += `<text x="${X(t.x)}" y="${Y(t.y)}" font-size="11.5" fill="${t.color || muted}" text-anchor="${t.anchor || "start"}">${t.s}</text>`;
+  h += `</g>`;
+  svg.innerHTML = h;
+  if (o.legendId) $(o.legendId).innerHTML = o.series.filter(s => s.label).concat(o.hlines || []).filter(s => s.label)
+    .map(s => `<span><i style="background:${s.color}"></i>${s.label}</span>`).join("");
+}
+const logspace = (a, b, n) => Array.from({ length: n }, (_, i) => Math.pow(10, Math.log10(a) + (Math.log10(b) - Math.log10(a)) * i / (n - 1)));
+const C = i => css(`--c${i}`);
+
+// ---------- controls ----------
+function bindControls() {
+  $("s_Na").oninput = e => { state.Na = toVal("Na", +e.target.value); update(); };
+  $("s_W").oninput = e => { state.W = +e.target.value * 1e-4; update(); };
+  $("s_tau").oninput = e => { state.tauSRH = toVal("tau", +e.target.value); update(); };
+  $("s_S").oninput = e => { state.S = toVal("S", +e.target.value); update(); };
+  $("s_suns").oninput = e => { state.suns = toVal("suns", +e.target.value); update(); };
+  $("s_J").oninput = e => { state.Jph = +e.target.value / 10; update(); };
+  $("s_ni").onchange = e => { state.ni = +e.target.value; update(); };
+  $("s_int").onchange = e => { state.intrinsic = e.target.checked; update(); };
+  document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => { Object.assign(state, PRESETS[b.dataset.preset]); syncSliders(); update(); });
+  document.querySelectorAll("#tabbar button").forEach(b => b.onclick = () => {
+    document.querySelectorAll("#tabbar button").forEach(x => x.classList.toggle("active", x === b));
+    document.querySelectorAll("section.tab").forEach(s => s.classList.toggle("active", s.id === b.dataset.tab));
+    try { localStorage.setItem("tab", b.dataset.tab); } catch (e) {}
+    update();
+  });
+  $("f_peak").oninput = $("f_tf").oninput = () => renderFlash();
+  $("m_sig").oninput = $("m_suns").oninput = () => renderMeasured();
+  $("d_sev").oninput = () => renderWafer(); $("d_map").onchange = () => renderWafer();
+  $("d_new").onclick = () => { waferSeed = (waferSeed * 9301 + 49297) % 233280; renderWafer(); };
+  $("l_V").oninput = () => renderLimit();
+  $("themeBtn").onclick = () => {
+    const r = document.documentElement, cur = r.getAttribute("data-theme");
+    const dark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    r.setAttribute("data-theme", dark ? "light" : "dark"); update();
+  };
+}
+function syncSliders() {
+  $("s_Na").value = toPos("Na", state.Na); $("s_W").value = Math.round(state.W * 1e4);
+  $("s_tau").value = toPos("tau", state.tauSRH); $("s_S").value = toPos("S", state.S);
+  $("s_suns").value = toPos("suns", state.suns); $("s_J").value = Math.round(state.Jph * 10);
+  $("s_ni").value = String(state.ni); $("s_int").checked = state.intrinsic;
+}
+
+// ---------- main update ----------
+let SS = null;
+function update() {
+  const p = P();
+  SS = steadyState(p);
+  const mob = mobility(p.Na), rho = 1 / (PHYS.q * mob.mup * p.Na);
+  $("v_Na").textContent = sci(p.Na) + " cm⁻³";
+  $("h_Na").textContent = `ρ ≈ ${rho.toPrecision(3)} Ω·cm (p-type: B or Ga)`;
+  $("v_W").textContent = Math.round(p.W * 1e4) + " µm";
+  $("v_tau").textContent = isFinite(p.tauSRH) ? fmtTime(p.tauSRH) : "∞ (no defects)";
+  $("v_S").textContent = p.S === 0 ? "0 (perfect)" : sci(p.S) + " cm/s";
+  $("v_suns").textContent = state.suns.toPrecision(3) + " sun" + (state.suns === 1 ? "" : "s");
+  $("v_J").textContent = state.Jph.toFixed(1) + " mA/cm²";
+  const LW = SS.L / p.W;
+  $("liveOut").innerHTML = [
+    ["Generation G", sci(SS.G) + " cm⁻³s⁻¹"], ["Excess density Δn", sci(SS.dn) + " cm⁻³"],
+    ["Effective lifetime τ<sub>eff</sub>", fmtTime(SS.tauEff)], ["Implied V<sub>oc</sub>", Vf(SS.iVoc)],
+    ["Sheet photoconductance ΔσW", sci(SS.dSigmaW * 1e3) + " mS"], ["Diffusion length / W", LW.toFixed(2)],
+  ].map(r => `<div><span>${r[0]}</span><span>${r[1]}</span></div>`).join("");
+  const active = document.querySelector("section.tab.active").id;
+  ({ t1: renderT1, t2: renderT2, t3: renderT3, t4: renderWafer, t5: renderT5, t6: renderT6, t7: renderT7 })[active]();
+}
+
+// ---------- grading rule used across tabs ----------
+function grade(v) {
+  if (v >= 0.70) return { g: "A", c: "ok", t: "premium: supports high-efficiency cells" };
+  if (v >= 0.66) return { g: "B", c: "warn", t: "standard: typical industrial cell" };
+  return { g: "C", c: "bad", t: "reject or down-grade: lifetime too short" };
+}
+
+// ---------- TAB 1 ----------
+function renderT1() {
+  const p = P(), g = grade(SS.iVoc);
+  $("nowStats").innerHTML = [
+    [fmtTime(SS.tauEff), "effective lifetime τ<sub>eff</sub>"], [sci(SS.dn) + " cm⁻³", "excess carriers Δn at " + state.suns.toPrecision(3) + " sun"],
+    [Vf(SS.iVoc), "implied V<sub>oc</sub> (quasi-Fermi-level split)"],
+  ].map(s => `<div class="stat"><div class="v">${s[0]}</div><div class="l">${s[1]}</div></div>`).join("");
+  $("nowText").innerHTML = `With τ<sub>SRH</sub> = ${isFinite(p.tauSRH) ? fmtTime(p.tauSRH) : "∞"} and S = ${p.S ? sci(p.S) + " cm/s" : "0"}, the wafer holds Δn = ${sci(SS.dn)} cm⁻³; its quasi-Fermi levels split by ${SS.iVoc.toFixed(3)} eV, so no cell made from it can exceed <b>${Vf(SS.iVoc)}</b>. Grade <b>${g.g}</b> (${g.t}; this page's illustrative bins: A ≥ 0.700 V, B ≥ 0.660 V). Try the presets on the left.`;
+}
+
+// ---------- TAB 2 ----------
+function renderT2() {
+  const p = P();
+  $("genLine").innerHTML = `<span class="tag calc">calc</span> G = ${state.suns.toPrecision(3)} × ${state.Jph.toFixed(1)}×10⁻³ A/cm² / (1.6×10⁻¹⁹ C × ${(p.W * 1e4).toFixed(0)}×10⁻⁴ cm) = <b>${sci(SS.G)} cm⁻³ s⁻¹</b>`;
+  // tau vs dn
+  const dns = logspace(1e12, 1e17, 120);
+  const cs = dns.map(d => recomb(d, p));
+  const series = [
+    { pts: dns.map((d, i) => [d, cs[i].tauEff]), color: C(1), label: "τ<sub>eff</sub> (total)", width: 3 },
+    { pts: isFinite(p.tauSRH) ? dns.map(d => [d, p.tauSRH]) : [], color: C(2), dash: "6 4", label: "SRH" },
+    { pts: p.intrinsic ? dns.map((d, i) => [d, cs[i].tauAug]) : [], color: C(4), dash: "6 4", label: "Auger" },
+    { pts: p.intrinsic ? dns.map((d, i) => [d, cs[i].tauRad]) : [], color: C(5), dash: "2 3", label: "radiative" },
+    { pts: p.S > 0 ? dns.map((d, i) => [d, cs[i].tauS]) : [], color: C(3), dash: "6 4", label: "surface" },
+  ];
+  plot("p_tau", { xlog: true, ylog: true, xlim: [1e12, 1e17], ylim: [1e-7, 1e-1], xlabel: "excess carrier density Δn (cm⁻³)", ylabel: "lifetime (s)",
+    series, legendId: "lg_tau", points: [{ x: SS.dn, y: SS.tauEff, color: C(1), label: fmtTime(SS.tauEff) }] });
+  drawBand(p);
+  // QFL table
+  $("qflTable").innerHTML = `<table><tr><th>Quantity</th><th>Dark</th><th>Lit (${state.suns.toPrecision(3)} sun)</th></tr>
+   <tr><td>n (cm⁻³)</td><td class="num">${sci(SS.n0)}</td><td class="num">${sci(SS.n)}</td></tr>
+   <tr><td>p (cm⁻³)</td><td class="num">${sci(SS.p0)}</td><td class="num">${sci(SS.p)}</td></tr>
+   <tr><td>E<sub>Fn</sub> − E<sub>Fi</sub></td><td class="num">−${SS.EFi_EF0.toFixed(3)} eV (= E<sub>F</sub>)</td><td class="num">${SS.EFn_EFi >= 0 ? "+" : ""}${SS.EFn_EFi.toFixed(3)} eV</td></tr>
+   <tr><td>E<sub>Fi</sub> − E<sub>Fp</sub></td><td class="num">${SS.EFi_EF0.toFixed(3)} eV</td><td class="num">${SS.EFi_EFp.toFixed(4)} eV</td></tr>
+   <tr><td>np / n<sub>i</sub>²</td><td class="num">1</td><td class="num">${sci(SS.n * SS.p / p.ni ** 2)}</td></tr>
+   <tr><td><b>E<sub>Fn</sub> − E<sub>Fp</sub> = e·iV<sub>oc</sub></b></td><td class="num">0</td><td class="num"><b>${SS.iVoc.toFixed(4)} eV</b></td></tr></table>
+   <p class="note">The minority level E<sub>Fn</sub> moves by ${(SS.EFn_EFi + SS.EFi_EF0).toFixed(3)} eV; the majority level E<sub>Fp</sub> by only ${((SS.EFi_EFp - SS.EFi_EF0) * 1000).toFixed(2)} meV (PS6 2(c)(iv)): the minority carriers carry the news.</p>`;
+  // Voc vs tau
+  const taus = logspace(1e-6, 1e-2, 60);
+  const vt = taus.map(t => [t, steadyState({ ...p, tauSRH: t }).iVoc]);
+  const ref = steadyState({ ...p, tauSRH: 1e-6 }).iVoc;
+  const lim = steadyState({ ...p, tauSRH: Infinity, S: 0 }).iVoc;
+  plot("p_vtau", { xlog: true, xlim: [1e-6, 1e-2], ylim: [0.5, 0.8], xlabel: "bulk lifetime τ<tspan dy='3' font-size='9'>SRH</tspan> (s)", ylabel: "implied V<tspan dy='3' font-size='9'>oc</tspan> (V)",
+    series: [{ pts: vt, color: C(1), label: "this wafer (incl. surface)", width: 3 },
+      { pts: taus.map(t => [t, ref + 0.06 * Math.log10(t / 1e-6)]), color: C(6), dash: "5 4", label: "60 mV per decade" }],
+    hlines: [{ y: lim, color: C(4), label: `intrinsic limit (${Vf(lim)})` }], legendId: "lg_vtau",
+    points: isFinite(p.tauSRH) ? [{ x: p.tauSRH, y: SS.iVoc, color: C(1) }] : [] });
+  // Voc vs W for several S
+  const Ws = Array.from({ length: 40 }, (_, i) => (40 + i * 8) * 1e-4);
+  const Ss = [0, 10, 100, 1000];
+  plot("p_vW", { xlim: [40, 360], ylim: [0.5, 0.8], xlabel: "thickness W (µm)", ylabel: "implied V<tspan dy='3' font-size='9'>oc</tspan> (V)",
+    series: Ss.map((S, i) => ({ pts: Ws.map(W => [W * 1e4, steadyState({ ...p, W, S }).iVoc]), color: C(i + 1), label: S === 0 ? "S = 0" : `S = ${S} cm/s` })),
+    legendId: "lg_vW", points: [{ x: p.W * 1e4, y: SS.iVoc, color: C(6), label: "this wafer" }] });
+  // L
+  const LW = SS.L / p.W;
+  $("Lline").innerHTML = `<span class="tag calc">calc</span> D = ${(SS.D.Da).toFixed(1)} cm²/s (μ<sub>n</sub> = ${SS.mob.mun.toFixed(0)}, μ<sub>p</sub> = ${SS.mob.mup.toFixed(0)} cm²/V·s), L = √(D τ<sub>eff</sub>) = <b>${(SS.L * 1e4).toFixed(0)} µm</b>, L/W = <b>${LW.toFixed(2)}</b>. ` +
+    (LW >= 1 ? `<span class="pass">L &gt; W: carriers spread across the whole wafer — uniform Δn is a good assumption.</span>` :
+      `<span class="fail">L &lt; W: Δn is not uniform (it piles up near the lit face); treat results as an average only.</span>`);
+}
+function drawBand(p) {
+  const svg = $("p_band"); const Wd = 540, Ht = 330; svg.setAttribute("viewBox", `0 0 ${Wd} ${Ht}`);
+  const ink = css("--ink"), muted = css("--muted");
+  const top = 30, bot = 300, Eg = PHYS.Eg, scale = (bot - top) / Eg; // Ev at bot, Ec at top
+  const Ev = bot, Ec = top, EFi = bot - 0.56 * scale;
+  const EF0 = EFi + SS.EFi_EF0 * scale, EFn = EFi - SS.EFn_EFi * scale, EFp = EFi + SS.EFi_EFp * scale;
+  const L1 = 70, L2 = 245, R1 = 300, R2 = 475;
+  const ln = (x1, x2, y, c, w = 2.5, d = "") => `<line x1="${x1}" x2="${x2}" y1="${y}" y2="${y}" stroke="${c}" stroke-width="${w}" ${d ? `stroke-dasharray="${d}"` : ""}/>`;
+  const tx = (x, y, s, c = ink, a = "start", fs = 12.5) => `<text x="${x}" y="${y}" fill="${c}" font-size="${fs}" text-anchor="${a}">${s}</text>`;
+  let h = "";
+  h += tx((L1 + L2) / 2, 18, "dark", muted, "middle", 13) + tx((R1 + R2) / 2, 18, `light (${state.suns.toPrecision(3)} sun)`, muted, "middle", 13);
+  for (const [a, b] of [[L1, L2], [R1, R2]]) { h += ln(a, b, Ec, ink) + ln(a, b, Ev, ink) + ln(a, b, EFi, muted, 1.2, "4 4"); }
+  h += tx(L1 - 6, Ec + 4, "E<tspan dy='3' font-size='9'>c</tspan>", ink, "end") + tx(L1 - 6, Ev + 4, "E<tspan dy='3' font-size='9'>v</tspan>", ink, "end") + tx(L1 - 6, EFi + 4, "E<tspan dy='3' font-size='9'>Fi</tspan>", muted, "end");
+  h += ln(L1, L2, EF0, C(4), 2.5) + tx(L2 + 4, EF0 + 4, "E<tspan dy='3' font-size='9'>F</tspan>", C(4));
+  h += ln(R1, R2, EFn, C(1), 2.8) + tx(R2 + 4, EFn + 4, "E<tspan dy='3' font-size='9'>Fn</tspan>", C(1));
+  h += ln(R1, R2, EFp, C(4), 2.8) + tx(R2 + 4, EFp + 14, "E<tspan dy='3' font-size='9'>Fp</tspan>", C(4));
+  const ax = R1 + 60;
+  h += `<line x1="${ax}" x2="${ax}" y1="${EFn + 3}" y2="${EFp - 3}" stroke="${C(3)}" stroke-width="1.6" marker-end="url(#ah)" marker-start="url(#ah)"/>`;
+  h += `<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="${C(3)}"/></marker></defs>`;
+  h += tx(ax + 8, (EFn + EFp) / 2 + 4, `e·iV<tspan dy='3' font-size='9'>oc</tspan><tspan dy='-3'> = ${SS.iVoc.toFixed(3)} eV</tspan>`, C(3), "start", 12.5);
+  h += tx((L1 + L2) / 2, EF0 + 18, `E<tspan dy='3' font-size='9'>Fi</tspan><tspan dy='-3'> − E</tspan><tspan dy='3' font-size='9'>F</tspan><tspan dy='-3'> = ${SS.EFi_EF0.toFixed(3)} eV</tspan>`, muted, "middle", 11.5);
+  h += tx(ax + 8, EFn - 8, `E<tspan dy='3' font-size='9'>Fn</tspan><tspan dy='-3'> − E</tspan><tspan dy='3' font-size='9'>Fi</tspan><tspan dy='-3'> = ${SS.EFn_EFi.toFixed(3)} eV</tspan>`, C(1), "start", 11.5);
+  h += tx(270, 322, "E<tspan dy='3' font-size='9'>g</tspan><tspan dy='-3'> = 1.12 eV drawn to scale; E</tspan><tspan dy='3' font-size='9'>Fi</tspan><tspan dy='-3'> taken at midgap</tspan>", muted, "middle", 11);
+  svg.innerHTML = h;
+}
+
+// ---------- TAB 3 ----------
+function drawTool() {
+  const ink = css("--ink"), muted = css("--muted"), acc = css("--accent");
+  $("p_tool").innerHTML = `
+  <rect x="150" y="8" width="120" height="34" rx="6" fill="none" stroke="${ink}"/><text x="210" y="30" font-size="13" text-anchor="middle" fill="${ink}">flash lamp</text>
+  ${[0, 1, 2, 3, 4].map(i => `<line x1="${170 + i * 20}" y1="46" x2="${160 + i * 22}" y2="96" stroke="${css("--c2")}" stroke-width="1.6" stroke-dasharray="4 3"/>`).join("")}
+  <rect x="110" y="100" width="200" height="12" fill="${css("--c6")}" opacity=".55"/><text x="210" y="96" font-size="12" text-anchor="middle" fill="${ink}">wafer (Δn → Δσ)</text>
+  <rect x="330" y="96" width="60" height="18" rx="3" fill="${css("--c3")}" opacity=".8"/><text x="360" y="88" font-size="11.5" text-anchor="middle" fill="${ink}">reference cell → G(t)</text>
+  <ellipse cx="210" cy="132" rx="70" ry="10" fill="none" stroke="${acc}" stroke-width="2"/><ellipse cx="210" cy="140" rx="70" ry="10" fill="none" stroke="${acc}" stroke-width="2"/>
+  <text x="210" y="168" font-size="12" text-anchor="middle" fill="${ink}">RF coil: eddy currents in the wafer load the bridge → ΔσW(t)</text>
+  <rect x="120" y="182" width="180" height="30" rx="6" fill="none" stroke="${muted}"/><text x="210" y="201" font-size="12" text-anchor="middle" fill="${ink}">oscilloscope: ΔσW(t) and G(t)</text>
+  <line x1="210" y1="150" x2="210" y2="182" stroke="${muted}"/><line x1="360" y1="114" x2="360" y2="197" stroke="${muted}"/><line x1="360" y1="197" x2="300" y2="197" stroke="${muted}"/>
+  <text x="20" y="224" font-size="11" fill="${muted}">Schematic after Sinton &amp; Cuevas (1996) [1]; not to scale.</text>`;
+}
+function renderT3() { drawTool(); renderFlash(); renderMeasured(); }
+function renderFlash() {
+  const p = P();
+  if (!$("f_peak").dataset.init) { $("f_peak").value = toPos("peak", 20); $("f_tf").value = toPos("tf", 2e-3); $("f_peak").dataset.init = 1; }
+  const peak = toVal("peak", +$("f_peak").value), tf = toVal("tf", +$("f_tf").value);
+  $("f_peak_v").textContent = peak.toPrecision(3) + " suns"; $("f_tf_v").textContent = fmtTime(tf);
+  const tEnd = 4 * tf + 5 * Math.min(SS.tauEff, 0.01);
+  const d = flashSim(p, { sunsPeak: peak, tf, tEnd });
+  const Gm = Math.max(...d.map(o => o.G)), Dm = Math.max(...d.map(o => o.dn));
+  plot("p_flash", { xlim: [0, tEnd * 1e3], ylim: [0, 1.05], xlabel: "time (ms)", ylabel: "normalised signal",
+    series: [{ pts: d.map(o => [o.t * 1e3, o.G / Gm]), color: C(2), label: "reference cell (G)" },
+      { pts: d.map(o => [o.t * 1e3, o.dn / Dm]), color: C(1), label: "photoconductance (Δn)", width: 3 }], legendId: "lg_flash" });
+  const tStart = Math.max(5 * Math.min(SS.tauEff, tf), tEnd / 100);
+  const pts = d.filter(o => o.t > tStart && o.G > Gm * 2e-3 && o.dn > 1e11 && isFinite(o.tauGen) && o.tauGen > 0);
+  const ys = pts.flatMap(o => [o.tauQSS, o.tauGen, o.tauTrue]).filter(isFinite);
+  const yl = [Math.min(...ys) / 2, Math.max(...ys) * 2];
+  const xs = pts.map(o => o.dn);
+  plot("p_flashtau", { xlog: true, ylog: true, xlim: [Math.min(...xs), Math.max(...xs) * 1.2], ylim: yl, xlabel: "excess carrier density Δn (cm⁻³)", ylabel: "lifetime (s)",
+    series: [{ pts: pts.map(o => [o.dn, o.tauTrue]), color: C(6), width: 5, label: "true τ<sub>eff</sub>(Δn)" },
+      { pts: pts.map(o => [o.dn, o.tauGen]), color: C(3), dash: "6 3", label: "generalized Δn/(G − dΔn/dt)" },
+      { pts: pts.map(o => [o.dn, o.tauQSS]), color: C(4), label: "QSS Δn/G" }], legendId: "lg_flashtau" });
+  const errQ = Math.max(...pts.map(o => Math.abs(o.tauQSS / o.tauTrue - 1)));
+  const errG = Math.max(...pts.map(o => Math.abs(o.tauGen / o.tauTrue - 1)));
+  const ratio = SS.tauEff / tf;
+  const v = $("flashVerdict");
+  v.className = "callout " + (errQ < 0.05 ? "ok" : "warn");
+  v.innerHTML = `τ<sub>eff</sub>/t<sub>f</sub> = ${sci(ratio)}. Largest error over the sweep: QSS ${(errQ * 100).toFixed(1)} %, generalized ${(errG * 100).toFixed(1)} %. ` +
+    (errQ < 0.05 ? "τ ≪ flash decay: the quasi-steady-state analysis is valid." : "τ is not ≪ the flash decay: the QSS formula overestimates τ — use the generalized (or transient) analysis. This is the limiting case where QSS fails.");
+}
+function renderMeasured() {
+  const p = P(), sig = +$("m_sig").value * 1e-3, suns = +$("m_suns").value;
+  const r = fromPhotoconductance(sig, suns, p);
+  const v = impliedVoc(r.dn, p).iVoc;
+  $("m_out").innerHTML = `<div class="eq" style="font-size:15px">Δn = ΔσW / [e(μ<sub>n</sub>+μ<sub>p</sub>)W] = ${sci(sig)} S / [1.6×10⁻¹⁹ × ${(r.mob.mun + r.mob.mup).toFixed(0)} × ${(p.W * 1e4).toFixed(0)}×10⁻⁴] = <b>${sci(r.dn)} cm⁻³</b></div>
+   <div class="eq" style="font-size:15px">τ<sub>eff</sub> = Δn/G = ${sci(r.dn)} / ${sci(generation(suns, p.Jph, p.W))} = <b>${fmtTime(r.tau)}</b>; &nbsp; iV<sub>oc</sub> = <b>${Vf(v)}</b></div>`;
+}
+
+// ---------- TAB 4: synthetic PL image ----------
+let waferSeed = 12345;
+function rng(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+function renderWafer() {
+  const p = P(), N = 96, sev = +$("d_sev").value / 100; $("d_sev_v").textContent = Math.round(sev * 100) + " %";
+  const R = rng(waferSeed), clusters = Array.from({ length: 7 }, () => ({ x: R() * N, y: R() * N, r: 4 + R() * 10, k: 0.5 + R() }));
+  const ringR = N * (0.28 + 0.1 * R());
+  const cv = $("c_wafer"), ctx = cv.getContext("2d"), img = ctx.createImageData(N, N);
+  const tau0 = isFinite(p.tauSRH) ? p.tauSRH : 1e-2;
+  // cache: solve on a grid of lifetimes/S to keep it fast
+  const cache = new Map();
+  const solve = (tau, S) => { const k = Math.round(Math.log10(tau) * 80) + "_" + Math.round(Math.log10(S + 1) * 60); if (!cache.has(k)) cache.set(k, steadyState({ ...p, tauSRH: tau, S })); return cache.get(k); };
+  const vals = [], pls = [];
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const x = i + 0.5 - N / 2, y = j + 0.5 - N / 2, r = Math.hypot(x, y);
+    const inside = Math.max(Math.abs(x), Math.abs(y)) < N / 2 - 0.5 && !(Math.abs(x) + Math.abs(y) > N * 0.93);
+    if (!inside) { vals.push(null); pls.push(null); continue; }
+    let f = 1;
+    for (const c of clusters) { const d = Math.hypot(i - c.x, j - c.y); f *= 1 - sev * 0.97 * c.k / 1.5 * Math.exp(-(d * d) / (c.r * c.r)); }
+    f *= 1 - sev * 0.6 * Math.exp(-((r - ringR) ** 2) / 18);
+    const edge = Math.min(N / 2 - Math.abs(x), N / 2 - Math.abs(y));
+    const S = p.S + sev * 2e3 * Math.exp(-edge / 1.0);
+    const s = solve(Math.max(tau0 * Math.max(f, 0.01), 1e-7), S);
+    vals.push(s); pls.push(s.PL);
+  }
+  const plMax = Math.max(...pls.filter(v => v !== null));
+  const mode = $("d_map").value;
+  const vs = vals.filter(Boolean);
+  const vMin = Math.min(...vs.map(s => s.iVoc)), vMax = Math.max(...vs.map(s => s.iVoc));
+  for (let k = 0; k < N * N; k++) {
+    const s = vals[k]; let c = [20, 24, 32];
+    if (s) {
+      let t;
+      if (mode === "pl") t = s.PL / plMax;
+      else if (mode === "voc") t = (s.iVoc - vMin) / Math.max(vMax - vMin, 1e-3);
+      else t = (Math.log10(s.tauEff) - Math.log10(Math.min(...vs.map(q => q.tauEff)))) / Math.max(Math.log10(Math.max(...vs.map(q => q.tauEff)) / Math.min(...vs.map(q => q.tauEff))), 1e-3);
+      t = Math.max(0, Math.min(1, t));
+      c = mode === "pl" ? [Math.round(255 * t), Math.round(255 * t), Math.round(255 * t)] : [Math.round(255 * Math.min(1, 1.6 * t)), Math.round(255 * t * t), Math.round(120 * (1 - t) + 40)];
+    }
+    img.data.set([...c, 255], 4 * k);
+  }
+  ctx.putImageData(img, 0, 0);
+  $("lg_wafer").innerHTML = mode === "pl" ? `<span>black = dark (short τ) … white = brightest</span>` :
+    mode === "voc" ? `<span>dark = ${Vf(vMin)} … bright = ${Vf(vMax)}</span>` : `<span>dark = short τ … bright = long τ</span>`;
+  // statistics and binning
+  const avg = vs.reduce((a, s) => a + s.iVoc, 0) / vs.length;
+  const avgPL = vs.reduce((a, s) => a + s.PL, 0) / vs.length;
+  const voc_of_avgPL = PHYS.kT * Math.log(avgPL / (PHYS.B * p.W * p.ni * p.ni) + 1);
+  const darkFrac = vs.filter(s => s.PL < 0.5 * plMax).length / vs.length;
+  const g = grade(voc_of_avgPL);
+  const bin = darkFrac > 0.25 ? { g: "C", c: "bad" } : g;
+  $("waferStats").innerHTML = `<table>
+    <tr><td>Area-average implied V<sub>oc</sub></td><td class="num">${Vf(avg)}</td></tr>
+    <tr><td>V<sub>oc</sub> of the average PL (what a voltage "sees")</td><td class="num">${Vf(voc_of_avgPL)}</td></tr>
+    <tr><td>Dark area (PL &lt; ½ of max)</td><td class="num">${(darkFrac * 100).toFixed(1)} %</td></tr>
+    <tr><td><b>Bin</b></td><td><span class="${bin.c === "ok" ? "pass" : bin.c === "warn" ? "warnc" : "fail"}">Grade ${bin.g}</span></td></tr></table>
+    <p class="note">PL ∝ e<sup>eV/kT</sup>: a pixel 10× darker is 60 mV lower. Rule: grade from the V<sub>oc</sub> of the area-average PL (A ≥ 0.700 V, B ≥ 0.660 V); grade C if more than 25 % of the area is dark.</p>`;
+  const bins = 24, lo = vMin - 0.002, hi = vMax + 0.002, w = (hi - lo) / bins, hist = new Array(bins).fill(0);
+  vs.forEach(s => hist[Math.min(bins - 1, Math.floor((s.iVoc - lo) / w))]++);
+  const hm = Math.max(...hist);
+  plot("p_hist", { xlim: [lo, hi], ylim: [0, hm / vs.length * 100 * 1.1], xlabel: "implied V<tspan dy='3' font-size='9'>oc</tspan> (V)", ylabel: "area (%)",
+    xTickFmt: v => v.toFixed(3),
+    series: [{ pts: hist.map((h, i) => [lo + (i + 0.5) * w, h / vs.length * 100]), color: C(1), bars: true, bw: 440 / bins * 0.85 }],
+    vlines: [{ x: avg, color: C(4) }] });
+  // spectrum
+  const sp = plSpectrum();
+  plot("p_spec", { xlim: [950, 1300], ylim: [0, 1.05], xlabel: "wavelength (nm)", ylabel: "PL intensity (normalised)",
+    series: [{ pts: sp.map(o => [o.lam, o.I]), color: C(4), width: 3 }], vlines: [{ x: 1107, color: C(6) }],
+    texts: [{ x: 1102, y: 0.95, anchor: "end", s: "λ = hc/E<tspan dy='3' font-size='9'>g</tspan><tspan dy='-3'> = 1107 nm</tspan>" }] });
+}
+
+// ---------- TAB 5: validation ----------
+function validations() {
+  const rows = [];
+  const add = (what, page, ref, tol, src, unit = "") => rows.push({ what, page, ref, tol, src, unit, ok: Math.abs(page / ref - 1) <= tol });
+  const ps6 = { ...PRESETS.ps6, tauSRH: 20e-6, S: 0 };
+  const a = steadyState(ps6);
+  add("PS6 wafer, 1 sun: generation G (cm⁻³s⁻¹)", a.G, 1.5e19, 0.01, "PS6 2(a)(iii)");
+  add("PS6 wafer: Δn = Gτ (cm⁻³)", a.dn, 3.0e14, 0.02, "PS6 2(b)(i)");
+  add("PS6 wafer: implied V<sub>oc</sub> (V)", a.iVoc, 0.63, 0.01, "PS6 2(d)");
+  const b = steadyState({ ...ps6, tauSRH: 2e-6 });
+  add("PS6 cheaper wafer τ = 2 µs: implied V<sub>oc</sub> (V)", b.iVoc, 0.57, 0.01, "PS6 2(e)(ii)");
+  add("PS6: diffusion length at 20 µs (µm)", a.L * 1e4, 250, 0.05, "PS6 3(b)(ii)");
+  add("PS6: diffusion length at 2 µs (µm)", b.L * 1e4, 79, 0.05, "PS6 3(e)(ii)");
+  add("PS6: Δn from Δσ(0) = 51.2×10⁻³ (Ω·cm)⁻¹ (cm⁻³)", fromPhotoconductance(51.2e-3 * 180e-4, 1, ps6).dn, 2.0e14, 0.02, "PS6 1(c)(i)");
+  add("Board number: N<sub>a</sub> = 10¹⁶, Δn = 10¹⁵ (V)", impliedVoc(1e15, ps6).iVoc, 0.661, 0.002, "hand calculation");
+  const lim = { ...PRESETS.limit, tauSRH: Infinity, S: 0, Na: 1e13 };
+  const L = steadyState(lim), jv = impliedJV(lim);
+  add("Intrinsic limit, 110 µm undoped: V<sub>oc</sub> (V)", L.iVoc, 0.761, 0.01, "Richter 2013 [10, 11]");
+  add("Intrinsic limit: fill factor", jv.pFF, 0.893, 0.02, "Richter 2013 [10, 11]");
+  add("Intrinsic limit: efficiency (%)", jv.eta * 100, 29.4, 0.02, "Richter 2013 [10, 11]");
+  const surf = steadyState({ ...ps6, tauSRH: Infinity, S: 1e7, intrinsic: false });
+  add("Limiting case S → ∞: τ<sub>eff</sub> → W²/(π²D) (µs)", surf.tauEff * 1e6, (180e-4 / Math.PI) ** 2 / surf.D.Da * 1e6, 0.01, "Sproul 1994 [7]");
+  return rows;
+}
+function renderT5() {
+  const p = P();
+  $("boardCheck").innerHTML = `<span class="tag calc">calc</span> The page's model gives <b>${impliedVoc(1e15, { ...p, Na: 1e16 }).iVoc.toFixed(4)} V</b> for the same inputs (it keeps n<sub>0</sub> = n<sub>i</sub>²/N<sub>a</sub> = 10⁴ cm⁻³, negligible). In low injection (Δn ≪ N<sub>a</sub>) the formula reduces to (kT/e) ln(N<sub>a</sub>Δn/n<sub>i</sub>²) = 0.026 ln(10¹¹) = 0.659 V: the 2 mV difference is the (N<sub>a</sub> + Δn) term — 10 % more holes.`;
+  const rows = validations();
+  $("valTable").innerHTML = `<table><tr><th>Check</th><th>Page</th><th>Reference</th><th>Δ</th><th>Source</th><th></th></tr>` +
+    rows.map(r => `<tr><td>${r.what}</td><td class="num">${sci(r.page, 3)}</td><td class="num">${sci(r.ref, 3)}</td><td class="num">${((r.page / r.ref - 1) * 100).toFixed(1)} %</td><td class="small">${r.src}</td><td class="${r.ok ? "pass" : "fail"}">${r.ok ? "✓" : "✗"}</td></tr>`).join("") + `</table>`;
+  $("valNotes").innerHTML = `<b>Discrepancies explained.</b> (1) Diffusion lengths are ≈ 3 % below PS6 because the page uses μ<sub>n</sub> = 1184 cm²/V·s from the Masetti fit (PS6: 1200) and the ambipolar D, which at Δn/N<sub>a</sub> = 3 % is slightly below D<sub>n</sub>. (2) The intrinsic-limit V<sub>oc</sub> is ≈ 4 mV above Richter's 761 mV: the page uses the course n<sub>i</sub> = 1.0×10¹⁰ at 300 K with no band-gap narrowing and B<sub>rel</sub> = 1, and uniform generation; Richter used n<sub>i,eff</sub> with band-gap narrowing, 25 °C and Lambertian light trapping. The fill factor is ≈ 0.7 % low for the same reasons. All agree within the tolerance stated (tolerances: 1–2 % for direct formula checks, 5 % for L, 1–2 % for the literature limit).`;
+  // module comparison
+  const perc = PRESETS.perc, s = steadyState(perc), need = tauForVoc(0.6875, perc);
+  // published lifetime: Cz-Si:Ga ~1 ohm cm, ~150 um, ALD-passivated, tau_eff > 1 ms at dn = 1e15 (Niewelt et al. 2024)
+  const pub = { Na: 1.5e16, W: 150e-4, S: 0, ni: 1e10, intrinsic: true, suns: 1, Jph: 41.0 };
+  let lo = 1e-4, hi = 1; for (let i = 0; i < 80; i++) { const m = Math.sqrt(lo * hi); if (recomb(1e15, { ...pub, tauSRH: m }).tauEff < 1e-3) lo = m; else hi = m; }
+  const pubS = steadyState({ ...pub, tauSRH: Math.sqrt(lo * hi) });
+  $("moduleCmp").innerHTML = `<table>
+   <tr><td>Module V<sub>oc</sub> per cell (25 °C) <span class="tag in">sourced</span></td><td class="num">0.6875 V</td></tr>
+   <tr><td>Same, corrected to 300 K at −2 mV/K <span class="tag calc">calc</span></td><td class="num">≈ 0.684 V</td></tr>
+   <tr><td>Page: "Industrial, passivated" preset (N<sub>a</sub> = 1.5×10¹⁶, 150 µm, τ<sub>SRH</sub> = 1 ms, S = 10 cm/s) <span class="tag calc">calc</span></td><td class="num">iV<sub>oc</sub> = ${Vf(s.iVoc)}</td></tr>
+   <tr><td>Effective lifetime a wafer needs to reach 0.6875 V at 1 sun (same wafer) <span class="tag calc">calc</span></td><td class="num">τ<sub>eff</sub> ≥ ${fmtTime(need.tauReq)}</td></tr>
+   <tr><td><b>Published lifetime</b> <span class="tag in">sourced</span>: industrial Cz-Si:Ga, ≈ 1 Ω·cm (N<sub>a</sub> ≈ 1.5×10¹⁶), ≈ 150 µm, Al<sub>2</sub>O<sub>3</sub>/HfO<sub>2</sub>-passivated: τ<sub>eff</sub> &gt; 1 ms at Δn = 10¹⁵ cm⁻³ [26] → page's implied V<sub>oc</sub> at 1 sun (J<sub>ph</sub> = 41 mA/cm²) <span class="tag calc">calc</span></td><td class="num">≥ ${Vf(pubS.iVoc)}</td></tr></table>
+   <p>The published wafer lifetime implies ≥ ${Vf(pubS.iVoc)}, and the passivated preset ${Vf(s.iVoc)} — <b>${((pubS.iVoc - 0.6875) * 1000).toFixed(0)} and ${((s.iVoc - 0.6875) * 1000).toFixed(0)} mV above</b> the finished PERC cell's 0.6875 V. So in a PERC cell the <b>wafer is not the bottleneck</b>: the losses are added by the cell — the diffused emitter and the metal contacts touching the silicon. This is why the industry is moving to passivated-contact cells (TOPCon overtook PERC in 2024 [15]): they keep more of the wafer's implied voltage. That is expected: implied V<sub>oc</sub> is an upper bound measured before the metal contacts and the heavily doped emitter are added, which bring extra recombination; the cell's V<sub>oc</sub> is the wafer's minus these losses. A wafer whose τ<sub>eff</sub> were below ${fmtTime(need.tauReq)} could not reach the datasheet voltage at all — that is the factory's acceptance threshold.</p>`;
+  // JV
+  const J = impliedJV(p);
+  const pts = J.pts.slice().sort((a, b) => a.V - b.V);
+  plot("p_jv", { xlim: [0, 0.8], ylim: [0, 45], xlabel: "voltage (V)", ylabel: "current density (mA/cm²)",
+    series: [{ pts: pts.map(o => [o.V, o.J]), color: C(1), width: 3 }, { pts: pts.map(o => [o.V, o.V * o.J / J.Pmax * 40]), color: C(2), dash: "5 4" }],
+    points: [{ x: J.Voc, y: 0, color: C(4), label: "V<tspan dy='3' font-size='9'>oc</tspan>", dy: -10 }] });
+  $("jvStats").innerHTML = `<table><tr><td>J<sub>sc</sub> (= J<sub>ph</sub>, full collection)</td><td class="num">${J.Jsc.toFixed(1)} mA/cm²</td></tr>
+   <tr><td>implied V<sub>oc</sub></td><td class="num">${Vf(J.Voc)}</td></tr><tr><td>pseudo fill factor</td><td class="num">${(J.pFF * 100).toFixed(1)} %</td></tr>
+   <tr><td>pseudo efficiency J<sub>sc</sub>V<sub>oc</sub>pFF / 100 mW/cm²</td><td class="num"><b>${(J.eta * 100).toFixed(1)} %</b></td></tr></table>
+   <p class="note">Dashed curve: power density (arbitrary scale); the maximum sets pFF.</p>`;
+}
+
+// ---------- TAB 6: the limit ----------
+function renderT6() { renderLimit(); }
+function renderLimit() {
+  const p = { ...P(), suns: 1 };
+  const V = +$("l_V").value / 1000; $("l_V_v").textContent = Vf(V);
+  const r = tauForVoc(V, p);
+  $("limitOut").innerHTML = `<div class="callout ${r.possible ? "ok" : "bad"}">To reach iV<sub>oc</sub> = <b>${Vf(V)}</b> at 1 sun, this wafer (N<sub>a</sub> = ${sci(p.Na)} cm⁻³, ${(p.W * 1e4).toFixed(0)} µm, J<sub>ph</sub> = ${p.Jph.toFixed(1)} mA/cm²) must hold Δn = ${sci(r.dn)} cm⁻³, i.e. τ<sub>eff</sub> ≥ <b>${fmtTime(r.tauReq)}</b>. ` +
+    (r.possible ? `Possible: the intrinsic ceiling at that Δn is ${fmtTime(r.tauIntr)}, so bulk + surface recombination must stay below 1/τ<sub>req</sub> − 1/τ<sub>intr</sub>.` :
+      `<b>Impossible</b>: even a perfect wafer only reaches τ = ${fmtTime(r.tauIntr)} at that Δn (Auger + radiative).`) + `</div>`;
+  const Vs = Array.from({ length: 80 }, (_, i) => 0.55 + i * 0.0029);
+  const req = Vs.map(v => [v, tauForVoc(v, p).tauReq]), ceil = Vs.map(v => [v, tauForVoc(v, p).tauIntr]);
+  plot("p_limit", { xlim: [0.55, 0.78], ylim: [1e-7, 1], ylog: true, xlabel: "target implied V<tspan dy='3' font-size='9'>oc</tspan> (V)", ylabel: "effective lifetime (s)",
+    xTickFmt: v => v.toFixed(2),
+    series: [{ pts: req, color: C(1), width: 3, label: "τ<sub>eff</sub> required" }, { pts: ceil, color: C(4), label: "intrinsic ceiling (Auger + radiative)" }],
+    vlines: [{ x: 0.6875, color: C(6) }], legendId: "lg_limit",
+    points: [{ x: V, y: r.tauReq, color: C(1), label: fmtTime(r.tauReq) }],
+    texts: [{ x: 0.6895, y: 3e-7, s: "module cell 0.6875 V" }] });
+}
+
+// ---------- TAB 7 ----------
+function renderT7() {
+  const p = P(), mob = mobility(p.Na);
+  $("paramTable").innerHTML = `<tr><th>Input</th><th>Value</th><th>Source / conditions</th></tr>
+   <tr><td>e, kT, n<sub>i</sub>, E<sub>g</sub></td><td class="num">1.6×10⁻¹⁹ C, 0.026 eV, ${sci(p.ni)} cm⁻³, 1.12 eV</td><td>Course constants, Si at 300 K [4, 25]; n<sub>i</sub> alternative 9.65×10⁹ [17]</td></tr>
+   <tr><td>Radiative coefficient B</td><td class="num">4.73×10⁻¹⁵ cm³/s</td><td>Trupke et al. 2003, intrinsic Si, 300 K [6]</td></tr>
+   <tr><td>Auger parameterisation</td><td>2.5×10⁻³¹, 8.5×10⁻³², 3.0×10⁻²⁹; N<sub>0,eeh</sub> = 3.3×10¹⁷, N<sub>0,ehh</sub> = 7.0×10¹⁷ cm⁻³</td><td>Richter et al. 2012, 300 K [5, 3]</td></tr>
+   <tr><td>Mobilities at N<sub>a</sub></td><td class="num">μ<sub>n</sub> = ${mob.mun.toFixed(0)}, μ<sub>p</sub> = ${mob.mup.toFixed(0)} cm²/V·s</td><td>Caughey–Thomas form, Masetti et al. parameters, 300 K, low field [9, 24]</td></tr>
+   <tr><td>Surface lifetime</td><td>τ<sub>s</sub> = W/2S + W²/(π²D)</td><td>Sproul 1994, equal S on both faces [7]</td></tr>
+   <tr><td>One-sun photocurrent</td><td class="num">≤ 43.3 mA/cm² (Φ = 2.7×10¹⁷ cm⁻²s⁻¹)</td><td>AM1.5G above E<sub>g</sub>; PS6; limit calculation [10, 11]</td></tr>
+   <tr><td>Module voltage</td><td class="num">49.50 V, 72 cells in series</td><td>LONGi LR5-72HPH-540M, STC 25 °C [14]</td></tr>
+   <tr><td>Instrument range</td><td>10 ns – &gt;10 ms</td><td>Sinton WCT-120 listing [13]</td></tr>`;
+  const rows = validations();
+  const pass = rows.filter(r => r.ok).length;
+  const mono = (() => { let ok = true, prev = 0; for (const t of logspace(1e-6, 1e-3, 20)) { const v = steadyState({ ...p, tauSRH: t }).iVoc; if (v < prev) ok = false; prev = v; } return ok; })();
+  const bal = (() => { const s = steadyState(p); return Math.abs(recomb(s.dn, p).R / s.G - 1) < 1e-6; })();
+  $("checks").innerHTML = `<ul class="small">
+   <li class="${pass === rows.length ? "pass" : "fail"}">${pass}/${rows.length} validation checks within tolerance (Tab 5).</li>
+   <li class="${bal ? "pass" : "fail"}">Steady-state balance G = R(Δn) satisfied to 10⁻⁶ for the current wafer.</li>
+   <li class="${mono ? "pass" : "fail"}">Expected trend: iV<sub>oc</sub> rises monotonically with τ<sub>SRH</sub>.</li>
+   <li class="pass">Units: G in cm⁻³s⁻¹ = (A/cm²)/(C·cm); ΔσW in S = (C)(cm⁻³)(cm²/V·s)(cm); iV<sub>oc</sub> in V = (eV)/e.</li></ul>`;
+}
+
+// ---------- boot ----------
+function wrapRuns(el) {
+  const kids = [...el.childNodes]; let run = [];
+  const flush = () => { if (run.length && run.some(n => n.textContent.trim())) { const s = document.createElement("span"); run[0].before(s); run.forEach(n => s.appendChild(n)); } run = []; };
+  for (const n of kids) {
+    const inl = n.nodeType === 3 || (n.nodeType === 1 && ["SUB", "SUP", "I", "EM"].includes(n.tagName));
+    if (inl) run.push(n); else flush();
+  }
+  flush();
+}
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".ctl label, .inline-ctl").forEach(wrapRuns);
+  bindControls(); syncSliders();
+  try { const t = localStorage.getItem("tab"); if (t && $(t)) document.querySelector(`[data-tab="${t}"]`).click(); } catch (e) {}
+  update();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
+});
+
+</script>
+</body>
+</html>
